@@ -159,7 +159,7 @@ body {
 .dots { display: none; }
 @media (orientation: landscape) and (max-height: 540px) {
   body { background: #000; padding-block: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-bottom, 0px)); }
-  .frame { grid-template-columns: minmax(0, 1fr); background: #000; box-shadow: none; padding: 0; border-radius: 0; gap: 0; }
+  .frame { grid-template-columns: minmax(0, 1fr); background: #000; box-shadow: none; padding: 0; border-radius: 0; gap: 0; overflow: clip; }
   .frame::after { border-radius: 0; opacity: .6; }
   .frame > * { --u: 1cqh; }
   /* rail collapses to a small SYNC chip in the top-left corner */
@@ -180,11 +180,10 @@ body {
     grid-area: 1 / 2; border-radius: 6cqh; border-width: 2px; background: #0d0b09;
     flex-direction: column; align-items: flex-start; justify-content: center; gap: 3cqh;
     padding: 7cqh 9cqh 7cqh 7cqh !important;
-    opacity: 0; transform: scale(.94); pointer-events: none;
-    transition: opacity .45s ease, transform .45s ease;
-    cursor: pointer; user-select: none; -webkit-user-select: none;
+    opacity: 0; pointer-events: none; will-change: transform, opacity;
+    cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none;
   }
-  .w.on { opacity: 1; transform: none; pointer-events: auto; }
+  .w.on { opacity: 1; pointer-events: auto; }
   .w .tag { grid-auto-flow: column; align-items: baseline; gap: 2cqh; }
   .w .tag .ko { font-size: 8cqh; }
   .w .tag .en { font-size: 4.4cqh; margin: 0; }
@@ -206,12 +205,13 @@ body {
   .ext::after { background: repeating-linear-gradient(45deg, var(--red) 0 1.6cqh, #000 1.6cqh 3.2cqh); }
   #wPeriod::after { background: repeating-linear-gradient(-45deg, var(--green) 0 1.6cqh, #000 1.6cqh 3.2cqh); }
 
-  .dots { display: grid; gap: 2.2cqh; position: absolute; right: .4cqw; top: 50%; transform: translateY(-50%); }
+  .dots { display: grid; gap: 2.2cqh; position: absolute; right: .4cqw; top: 50%; transform: translateY(-50%); opacity: .3; transition: opacity .5s ease; }
+  .dots.show { opacity: 1; transition-duration: .15s; }
   .dots i { width: 1.8cqh; height: 1.8cqh; border-radius: 50%; background: var(--dim); opacity: .5; transition: background .3s, opacity .3s; }
   .dots i.on { background: var(--amber); opacity: 1; }
 }
 @media (orientation: landscape) and (max-height: 540px) and (prefers-reduced-motion: reduce) {
-  .w { transition: none; transform: none; }
+  .w { transition: none !important; }
 }
 
 /* ---------- settings ---------- */
@@ -544,26 +544,81 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   });
 
   // ----- StandBy widget stack (phone landscape) -----
+  // Cards sit in a vertical stack: the card follows the finger while dragging, then
+  // springs to the next/previous card on release (or back, if the swipe was short).
   const standby = matchMedia('(orientation: landscape) and (max-height: 540px)');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const widgets = [$('wPeriod'), $('wDday'), $('wExt')];
-  const dots = [...document.querySelectorAll('.dots i')];
-  let wi = 0, lastSwitch = Date.now();
-  function showW(i) {
-    wi = (i + widgets.length) % widgets.length; lastSwitch = Date.now();
+  const n = widgets.length;
+  const dotsBox = document.querySelector('.dots');
+  const dots = [...dotsBox.querySelectorAll('i')];
+  const SPRING = 'transform .62s cubic-bezier(.18, 1.18, .32, 1), opacity .4s ease';
+  let wi = 0, lastSwitch = Date.now(), drag = 0, dragging = false, dotsTimer = 0;
+
+  const rel = (k) => { let r = (((k - wi) % n) + n) % n; if (r > n / 2) r -= n; return r; };
+  const step = () => widgets[wi].offsetHeight + innerHeight * 0.06;
+
+  function layout(animate, prev) {
+    if (!standby.matches) { widgets.forEach((w) => { w.style.cssText = ''; }); return; }
+    const h = step();
+    widgets.forEach((w, k) => {
+      const r = rel(k), pos = r + drag / h, far = Math.min(1.2, Math.abs(pos));
+      // A card that wraps from one end of the stack to the other moves while hidden.
+      const jump = prev && Math.abs(prev[k] - r) > 1;
+      w.style.transition = animate && !jump && !reduce.matches ? SPRING : 'none';
+      w.style.transform = `translateY(${(pos * h).toFixed(1)}px) scale(${(1 - 0.09 * far).toFixed(3)})`;
+      w.style.opacity = Math.max(0, 1 - 1.15 * far).toFixed(3);
+      w.style.zIndex = r === 0 ? 2 : 1;
+    });
+  }
+  function flashDots() {
+    dotsBox.classList.add('show');
+    clearTimeout(dotsTimer);
+    dotsTimer = setTimeout(() => dotsBox.classList.remove('show'), 1500);
+  }
+  function showW(i, animate = true) {
+    const prev = widgets.map((_, k) => rel(k));
+    wi = ((i % n) + n) % n; drag = 0; lastSwitch = Date.now();
     widgets.forEach((w, k) => w.classList.toggle('on', k === wi));
     dots.forEach((d, k) => d.classList.toggle('on', k === wi));
+    layout(animate, prev);
+    if (animate) flashDots();
   }
-  showW(0);
-  setInterval(() => { if (standby.matches && !dlg.open && Date.now() - lastSwitch >= 10000) showW(wi + 1); }, 1000);
-  let y0 = null;
+  showW(0, false);
+  standby.addEventListener('change', () => layout(false));
+  addEventListener('resize', () => layout(false));
+  setInterval(() => {
+    if (standby.matches && !dragging && !dlg.open && Date.now() - lastSwitch >= 10000) showW(wi + 1);
+  }, 500);
+
+  let y0 = 0, t0 = 0, lastY = 0, lastT = 0, vel = 0, moved = false;
   widgets.forEach((w) => {
-    w.addEventListener('click', () => { if (standby.matches) showW(wi + 1); });
-    w.addEventListener('touchstart', (e) => { y0 = e.touches[0].clientY; }, { passive: true });
-    w.addEventListener('touchend', (e) => {
-      if (!standby.matches || y0 === null) return;
-      const dy = e.changedTouches[0].clientY - y0; y0 = null;
-      if (Math.abs(dy) > 30) { e.preventDefault(); showW(wi + (dy < 0 ? 1 : -1)); }
+    w.addEventListener('pointerdown', (e) => {
+      if (!standby.matches || !w.classList.contains('on')) return;
+      dragging = true; moved = false; drag = 0; vel = 0;
+      y0 = lastY = e.clientY; t0 = lastT = performance.now();
+      try { w.setPointerCapture(e.pointerId); } catch {}
     });
+    w.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const now = performance.now();
+      if (now > lastT) vel = 0.7 * vel + 0.3 * ((e.clientY - lastY) / (now - lastT));
+      lastY = e.clientY; lastT = now;
+      drag = e.clientY - y0;
+      if (Math.abs(drag) > 6) moved = true;
+      layout(false); flashDots();
+    });
+    const release = (cancel) => {
+      if (!dragging) return;
+      dragging = false;
+      const h = step();
+      if (!moved && !cancel) { showW(wi + 1); return; }       // tap: next card
+      if (!cancel && (drag < -h * 0.18 || vel < -0.45)) showW(wi + 1);   // swipe up
+      else if (!cancel && (drag > h * 0.18 || vel > 0.45)) showW(wi - 1); // swipe down
+      else { drag = 0; layout(true); }                         // short swipe: spring back
+    };
+    w.addEventListener('pointerup', () => release(false));
+    w.addEventListener('pointercancel', () => release(true));
   });
 
   // Keep the screen awake while visible (ignored if refused).
