@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0907">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Fredoka:wght@600;700&family=Black+Han+Sans&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Archivo:wdth,wght@62..125,100..900&family=Fredoka:wght@600;700&family=Black+Han+Sans&family=Share+Tech+Mono&display=swap">
 <style>
 /* Layout: CRT-style bezel that fills the screen. Landscape (MacBook, iPad/phone sideways): left rail + right stack.
    Portrait (phone, iPad upright): one column. All sizes scale from --u, a unit tied to the frame's own width and height. */
@@ -22,6 +22,9 @@
   --red: var(--t-red); --green: var(--t-green); --amber: var(--t-amber); --yellow: var(--t-yellow);
   --line: var(--t-line); --dim: var(--t-dim); --ink: var(--t-ink);
   --glow: rgba(255,75,43,.35);
+  --accent: #F59A4A;      /* ANALOG accent: second hand, center ring, alarm icon, weekday */
+  --a-fg: #ffffff;
+  --a-acc: var(--accent);
   --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
@@ -47,6 +50,8 @@
     --dim: color-mix(in srgb, var(--t-dim), #5a2014 var(--nr));
     --ink: color-mix(in srgb, var(--t-ink), #1a0500 var(--nr));
     --glow: color-mix(in srgb, var(--red) 38%, transparent);
+    --a-fg: color-mix(in srgb, #ffffff, #ff3b30 var(--nr));
+    --a-acc: color-mix(in srgb, var(--accent), #ff3b30 var(--nr));
   }
 }
 :root.night .frame { opacity: var(--nb); transition: opacity .6s ease; }
@@ -140,17 +145,17 @@ body {
 }
 .facename.show { opacity: 1; transition-duration: .1s; }
 
-.analog { padding: 2.5cqmin; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
-.analog svg { width: 100%; height: 100%; overflow: visible; }
-.analog .rim { fill: none; stroke: var(--line); stroke-width: 1.2; opacity: .55; }
-.analog .tick { stroke: var(--dim); stroke-linecap: round; }
-.analog .num { fill: var(--amber); font-family: var(--f-round); font-weight: 700; text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
-.analog .num.q { fill: var(--yellow); }
-.analog .adate { fill: var(--green); font-family: var(--f-digit); font-weight: 600; letter-spacing: .12em; text-anchor: middle; dominant-baseline: central; }
-.analog .hh, .analog .mh { stroke: var(--red); stroke-linecap: round; }
-.analog .sh { stroke: var(--green); stroke-linecap: round; }
-.analog .hub { fill: var(--red); }
-.analog .hub2 { fill: var(--bg); stroke: var(--green); }
+.analog { padding: 0; background: #000; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
+.analog svg { width: 100%; height: 100%; overflow: hidden; }
+.analog .tk { stroke: var(--a-fg); stroke-linecap: round; }
+.analog .num { fill: var(--a-fg); font-family: "Archivo", -apple-system, system-ui, sans-serif; font-stretch: 125%; font-weight: 650; text-anchor: middle; }
+.analog .slot { fill: var(--a-fg); fill-opacity: .9; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.analog .acc { fill: var(--a-acc); }
+.analog .accs { stroke: var(--a-acc); fill: none; stroke-linecap: round; }
+.analog .hand { stroke: var(--a-fg); stroke-linecap: round; }
+.analog .sec { stroke: var(--a-acc); stroke-linecap: round; }
+.analog .ring { fill: #000; stroke: var(--a-acc); }
+.analog .dbg { stroke: #3bc8d4; stroke-width: 1; fill: none; opacity: .6; }
 
 .led { gap: 4cqh; }
 .led .ldate { font: 600 min(9cqh, 4.6cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
@@ -328,6 +333,8 @@ body {
   :root.clockonly .ss { font-size: min(15cqh, 7cqw); padding: 0 0 1cqh; letter-spacing: .06em; }
   :root.clockonly.night .hm { text-shadow: none; }
   :root.clockonly .clock .analog { top: clamp(36px, 8cqh, 60px); }
+  :root.clockonly:has(.clock[data-face="analog"]) { --bg: #000; }   /* ANALOG is pure black edge to edge */
+  :root.clockonly:has(.clock[data-face="analog"]) .frame::after { display: none; }   /* flat, no scanlines */
 }
 
 /* ---------- settings ---------- */
@@ -337,6 +344,11 @@ dialog {
 }
 dialog::backdrop { background: rgba(0,0,0,.75); }
 .night-set { border: 1px solid var(--line); padding: 12px 14px 2px; margin: 0 0 14px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 12px; }
+.swatches button { width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; box-shadow: 0 0 0 2px var(--panel); }
+.swatches button[aria-checked="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px #fff; }
+.swatches button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 4px; }
+dialog input[type="color"] { width: 44px; height: 32px; padding: 0; border: 1px solid var(--dim); background: #000; }
 .night-set legend { font: 18px/1 var(--f-ko); color: var(--yellow); padding: 0 6px; }
 dialog label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 dialog input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--red); }
@@ -461,6 +473,18 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
         <option value="neon">NEON — 마젠타·시안</option>
       </select>
     </label>
+    <fieldset class="night-set" id="anaSet">
+      <legend>아날로그 ANALOG</legend>
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="강조색"></div>
+      <label class="check" for="accCustom">직접 고르기 <input type="color" id="accCustom"></label>
+      <div class="pair">
+        <label for="secMode">초침 SECOND HAND
+          <select id="secMode"><option value="sweep">부드럽게</option><option value="tick">1초씩</option></select>
+        </label>
+        <label for="alarm">다음 알람 ALARM<input type="time" id="alarm"></label>
+      </div>
+      <p class="hint">강조색은 초침, 가운데 링, 알람 아이콘, 요일 글자에 쓰입니다. 알람을 비우면 왼쪽 칸이 숨겨집니다. 웹페이지는 아이폰 알람을 읽을 수 없어 여기에 직접 넣어야 합니다.</p>
+    </fieldset>
     <label for="face">시계 스타일 CLOCK STYLE
       <select id="face">
         <option value="retro">RETRO — 큰 디지털</option>
@@ -562,7 +586,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', ...NIGHT_DEFAULTS };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', accent: '#F59A4A', secMode: 'sweep', alarm: '', ...NIGHT_DEFAULTS };
   const SCHEMES = ['signal', 'amber', 'phosphor', 'mono', 'neon'];
   function applyScheme() {
     document.documentElement.dataset.scheme = SCHEMES.includes(cfg.scheme) ? cfg.scheme : 'signal';
@@ -739,50 +763,183 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const on = DIG[n] || '';
     for (const poly of svg.querySelectorAll('polygon')) poly.setAttribute('class', on.includes(poly.dataset.s) ? 'on' : 'off');
   }
-  // Analog dial that fills the clock's rectangle: ticks and numerals sit on a squircle
-  // (|x/a|^n + |y/b|^n = 1) fitted to the box, so the dial follows the box's shape.
+  // ===== ANALOG: rectangular StandBy-style dial (iOS 17 "Analog" face) =====
+  // Every length is a multiple of H, the dial height. Ticks lie on hour/minute rays from the
+  // centre, cut between two concentric rectangles (OUTER, INNER), so long hour ticks get longer
+  // toward the corners. Values are measured from public screenshots and can be tuned here.
+  const CONFIG = {
+    minAspect: 1.6, maxAspect: 2.6,  // dial is letterboxed outside this W/H range so nothing collides
+    outerSideInset: 0.14, outerRy: 0.43,       // OUTER: rx = W/2 - 0.14H, ry = 0.43H
+    innerSideInset: 0.335, innerRy: 0.24,      // INNER: rx = W/2 - 0.335H, ry = 0.24H
+    hourTickW: 0.008, hourTickAlpha: 0.55,
+    cardinalGap: 0.03,                         // 12/3/6/9 tick starts this far outside the numeral
+    minuteTickLen: 0.045, minuteTickW: 0.005, minuteTickAlpha: 0.35,
+    numCap: 0.09, numCapRatio: 0.70,           // numeral cap height; Archivo cap height / em
+    num12y: 0.28, num3SideInset: 0.435,        // 12/6 at y = ±0.28H; 3/9 at x = ±(W/2 - 0.435H)
+    hourLen: 0.23, minLen: 0.38, stemLen: 0.05, stemW: 0.008, bodyW: 0.028,
+    secLen: 0.42, secTail: 0.065, secW: 0.005,
+    ringR: 0.017, ringW: 0.005,
+    slotCap: 0.045, slotLeftX: -0.30, slotRightX: 0.36, slotRingGap: 0.08, slotNumGap: 0.04,
+    tickEase: 120,                             // ms, tick mode
+  };
+  const ACCENTS = [['Rose', '#F06A8A'], ['Magenta', '#D45FB8'], ['Yellow', '#F5D33F'], ['Salmon', '#F2786E'],
+    ['Orange', '#F59A4A'], ['Green', '#5FD07A'], ['Cyan', '#3BC8D4'], ['Blue', '#4A90E2']];
+  const DEBUG = new URLSearchParams(location.search).has('debug');
   const SVGNS = 'http://www.w3.org/2000/svg';
-  let ana = null;  // { cx, cy } of the current build
-  function onSquircle(deg, a, b, n = 7) {
-    const t = deg * Math.PI / 180, sx = Math.sin(t), sy = -Math.cos(t);
-    const r = Math.pow(Math.pow(Math.abs(sx / a), n) + Math.pow(Math.abs(sy / b), n), -1 / n);
-    return [sx * r, sy * r];
-  }
+  let ana = null;
+  const hit = (rx, ry, deg) => {
+    const t = deg * Math.PI / 180, sx = Math.abs(Math.sin(t)), cy = Math.abs(Math.cos(t));
+    return Math.min(sx < 1e-9 ? Infinity : rx / sx, cy < 1e-9 ? Infinity : ry / cy);
+  };
+  const ray = (deg, r) => { const t = deg * Math.PI / 180; return [Math.sin(t) * r, -Math.cos(t) * r]; };
+  const f1 = (n) => n.toFixed(2);
+
   function buildAnalog() {
-    const box = $('analog'), svg = $('anaSvg');
-    const W = svg.clientWidth, H = svg.clientHeight;
-    if (!W || !H) return;
-    if (ana && ana.W === W && ana.H === H) return;
-    const cx = W / 2, cy = H / 2, m = Math.min(W, H);
-    // Dial fills the box, but never wider than ~2.1:1 or taller than 1:1.6 (very long dials bunch the numerals).
-    const DW = Math.min(W, H * 2.1), DH = Math.min(H, W * 1.6);
-    const a = DW / 2, b = DH / 2;                   // outer edge
-    const tickL = m * 0.035, tickW = Math.max(1, m * 0.006);
-    const fs = m * 0.13;                            // numeral size
-    let html = `<rect class="rim" x="${cx - a + 0.6}" y="${cy - b + 0.6}" width="${DW - 1.2}" height="${DH - 1.2}" rx="${m * 0.12}"/>`;
-    for (let i = 0; i < 60; i++) {
-      if (i % 5 === 0) continue;                    // numerals stand in for hour ticks
-      const [x1, y1] = onSquircle(i * 6, a - m * 0.012, b - m * 0.012);
-      const [x2, y2] = onSquircle(i * 6, a - m * 0.012 - tickL, b - m * 0.012 - tickL);
-      html += `<line class="tick" stroke-width="${tickW}" x1="${(cx + x1).toFixed(1)}" y1="${(cy + y1).toFixed(1)}" x2="${(cx + x2).toFixed(1)}" y2="${(cy + y2).toFixed(1)}"/>`;
+    const svg = $('anaSvg');
+    const BW = svg.clientWidth, BH = svg.clientHeight;
+    if (!BW || !BH) return;
+    if (ana && ana.BW === BW && ana.BH === BH) return;
+    const C = CONFIG;
+    // Fit a dial of aspect within [minAspect, maxAspect] inside the box.
+    let H = BH, W = BW;
+    if (W / H > C.maxAspect) W = H * C.maxAspect;
+    if (W / H < C.minAspect) H = W / C.minAspect;
+    const cx = BW / 2, cy = BH / 2;
+    const oRx = W / 2 - C.outerSideInset * H, oRy = C.outerRy * H;
+    const iRx = W / 2 - C.innerSideInset * H, iRy = C.innerRy * H;
+    const seg = (deg, r1, r2, w, alpha) => {
+      const [x1, y1] = ray(deg, r1), [x2, y2] = ray(deg, r2);
+      return `<line class="tk" stroke-width="${f1(w)}" stroke-opacity="${alpha}" x1="${f1(cx + x1)}" y1="${f1(cy + y1)}" x2="${f1(cx + x2)}" y2="${f1(cy + y2)}"/>`;
+    };
+    const numFs = C.numCap / C.numCapRatio * H;
+    const n3x = W / 2 - C.num3SideInset * H;
+    const nums = [['12', 0, -C.num12y * H], ['3', n3x, 0], ['6', 0, C.num12y * H], ['9', -n3x, 0]];
+    let html = '';
+    if (DEBUG) {
+      html += `<rect class="dbg" x="${f1(cx - oRx)}" y="${f1(cy - oRy)}" width="${f1(2 * oRx)}" height="${f1(2 * oRy)}"/>`;
+      html += `<rect class="dbg" x="${f1(cx - iRx)}" y="${f1(cy - iRy)}" width="${f1(2 * iRx)}" height="${f1(2 * iRy)}"/>`;
+      for (let h = 0; h < 12; h++) { const [x, y] = ray(h * 30, hit(oRx, oRy, h * 30)); html += `<line class="dbg" x1="${cx}" y1="${cy}" x2="${f1(cx + x)}" y2="${f1(cy + y)}"/>`; }
     }
-    const inset = m * 0.012 + fs * 0.62;
-    for (let h = 1; h <= 12; h++) {
-      const [x, y] = onSquircle(h * 30, a - inset, b - inset, 5);
-      html += `<text class="num${h % 3 === 0 ? ' q' : ''}" font-size="${fs.toFixed(1)}" x="${(cx + x).toFixed(1)}" y="${(cy + y).toFixed(1)}">${h}</text>`;
+    // minute ticks (48, skipping the hours)
+    for (let m = 0; m < 60; m++) {
+      if (m % 5 === 0) continue;
+      const deg = m * 6, ro = hit(oRx, oRy, deg);
+      html += seg(deg, ro - C.minuteTickLen * H, ro, C.minuteTickW * H, C.minuteTickAlpha);
     }
-    const R = Math.min(a, b) - inset - fs * 0.55;   // longest hand stays inside the numerals
-    html += `<text class="adate" id="aDate" font-size="${(m * 0.06).toFixed(1)}" x="${cx}" y="${(cy + R * 0.48).toFixed(1)}"></text>`;
-    html += `<line class="hh" id="aH" stroke-width="${(m * 0.032).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.12}" x2="${cx}" y2="${cy - R * 0.55}"/>`;
-    html += `<line class="mh" id="aM" stroke-width="${(m * 0.022).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.12}" x2="${cx}" y2="${cy - R * 0.96}"/>`;
-    html += `<circle class="hub" cx="${cx}" cy="${cy}" r="${(m * 0.026).toFixed(1)}"/>`;
-    html += `<line class="sh" id="aS" stroke-width="${Math.max(1, m * 0.007).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.2}" x2="${cx}" y2="${cy - R * 1.02}"/>`;
-    html += `<circle class="hub2" stroke-width="${(m * 0.006).toFixed(1)}" cx="${cx}" cy="${cy}" r="${(m * 0.011).toFixed(1)}"/>`;
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    // long hour ticks between INNER and OUTER
+    for (const h of [1, 2, 4, 5, 7, 8, 10, 11]) {
+      const deg = h * 30;
+      html += seg(deg, hit(iRx, iRy, deg), hit(oRx, oRy, deg), C.hourTickW * H, C.hourTickAlpha);
+    }
+    // numerals (cap height centred on the anchor point)
+    for (const [t, x, y] of nums) html += `<text class="num" id="an${t}" font-size="${f1(numFs)}" x="${f1(cx + x)}" y="${f1(cy + y + C.numCap * H / 2)}">${t}</text>`;
+    html += '<g id="anCard"></g><g id="anSlots"></g>';
+    // hands: thin stem, then a capsule body (round caps end exactly at stemLen and the tip)
+    const hand = (id, len) => {
+      const bw = C.bodyW * H;
+      return `<g id="${id}"><line class="hand" stroke-width="${f1(C.stemW * H)}" x1="${cx}" y1="${cy}" x2="${cx}" y2="${f1(cy - C.stemLen * H)}"/>` +
+        `<line class="hand" stroke-width="${f1(bw)}" x1="${cx}" y1="${f1(cy - C.stemLen * H - bw / 2)}" x2="${cx}" y2="${f1(cy - len * H + bw / 2)}"/></g>`;
+    };
+    html += hand('aH', C.hourLen) + hand('aM', C.minLen);
+    html += `<line class="sec" id="aS" stroke-width="${f1(C.secW * H)}" x1="${cx}" y1="${f1(cy + C.secTail * H)}" x2="${cx}" y2="${f1(cy - C.secLen * H)}"/>`;
+    html += `<circle class="ring" stroke-width="${f1(C.ringW * H)}" cx="${cx}" cy="${cy}" r="${f1(C.ringR * H - C.ringW * H / 2)}"/>`;
+    svg.setAttribute('viewBox', `0 0 ${BW} ${BH}`);
     svg.innerHTML = html;
-    ana = { W, H, cx, cy };
+    // 12/3/6/9 ticks start just outside each numeral's measured box
+    let card = '';
+    for (const [t, deg] of [['12', 0], ['3', 90], ['6', 180], ['9', 270]]) {
+      const bb = $('an' + t).getBBox();
+      const edge = deg % 180 === 0 ? Math.abs(cy - (deg === 0 ? bb.y : bb.y + bb.height)) : Math.abs(cx - (deg === 90 ? bb.x + bb.width : bb.x));
+      const ro = hit(oRx, oRy, deg), ri = Math.max(C.numCap * H / 2, edge) + C.cardinalGap * H;
+      if (ro > ri) card += seg(deg, ri, ro, C.hourTickW * H, C.hourTickAlpha);
+    }
+    $('anCard').innerHTML = card;
+    const b3 = $('an3').getBBox();
+    ana = { BW, BH, W, H, cx, cy, num3Inner: (b3.x - cx), slotKey: '' };
+    drawSlots(true);
   }
-  new ResizeObserver(() => { if ($('clock').dataset.face === 'analog') { buildAnalog(); drawFaces(kstNow()); } }).observe($('anaSvg'));
+
+  // Slots: left = alarm icon + next alarm, right = weekday (accent) + day. They sit between the
+  // centre ring and the 3/9 numerals; if a slot is wider than that gap its text shrinks to fit.
+  function drawSlots(force) {
+    if (!ana) return;
+    const p = kstNow(), C = CONFIG, { cx, cy, H } = ana;
+    const wd = (p.weekday || '').toUpperCase(), day = String(+p.day);
+    let alarm = '';
+    if (cfg.alarm && /^\d{2}:\d{2}$/.test(cfg.alarm)) {
+      const [ah, am] = cfg.alarm.split(':').map(Number);
+      alarm = `${((ah + 11) % 12) + 1}:${String(am).padStart(2, '0')}|${ah < 12 ? 'AM' : 'PM'}`;
+    }
+    const key = wd + day + alarm + H;
+    if (!force && key === ana.slotKey) return;
+    ana.slotKey = key;
+    const g = $('anSlots');
+    const fs = C.slotCap / C.numCapRatio * H, base = cy + C.slotCap * H / 2;
+    const lo = C.slotRingGap * H, hi = ana.num3Inner - C.slotNumGap * H;   // free band on each side
+    let html = `<text class="slot" id="slotR" font-size="${f1(fs)}" y="${f1(base)}"><tspan class="acc">${wd}</tspan> ${day}</text>`;
+    if (alarm) {
+      const [t, ap] = alarm.split('|');
+      html += `<text class="slot" id="slotL" font-size="${f1(fs)}" y="${f1(base)}">${t}<tspan font-size="${f1(fs * 0.75)}">${ap}</tspan></text>`;
+    }
+    g.innerHTML = html;
+    const place = (el, centre, side, extra) => {
+      let w = el.getComputedTextLength() + extra, scale = 1;
+      if (w > hi - lo) { scale = (hi - lo) / w; w *= scale; }
+      if (scale < 1) el.setAttribute('font-size', f1(fs * scale));
+      const c = Math.min(Math.max(Math.abs(centre * H), lo + w / 2), hi - w / 2);   // keep inside the band
+      return [cx + side * c, w, scale];
+    };
+    const r = $('slotR');
+    const [rc] = place(r, C.slotRightX, 1, 0);
+    r.setAttribute('x', f1(rc)); r.setAttribute('text-anchor', 'middle');
+    const l = $('slotL');
+    if (l) {
+      const icon = fs * 0.95, gap = fs * 0.3;
+      const [lc, w, sc] = place(l, C.slotLeftX, -1, icon + gap);
+      const left = lc - w / 2, ic = icon * sc;
+      l.setAttribute('x', f1(left + ic + gap * sc)); l.setAttribute('text-anchor', 'start');
+      // alarm clock icon: ring, two hands, two bells, two feet (accent)
+      const r0 = ic * 0.36, ix = left + ic / 2, iy = cy, sw = Math.max(1, ic * 0.09);
+      g.insertAdjacentHTML('beforeend',
+        `<g class="accs" stroke-width="${f1(sw)}"><circle cx="${f1(ix)}" cy="${f1(iy)}" r="${f1(r0)}"/>` +
+        `<path d="M${f1(ix)} ${f1(iy - r0 * 0.55)}V${f1(iy)}L${f1(ix + r0 * 0.45)} ${f1(iy + r0 * 0.25)}"/>` +
+        `<path d="M${f1(ix - r0 * 1.15)} ${f1(iy - r0 * 0.55)}a${f1(r0 * 0.55)} ${f1(r0 * 0.55)} 0 0 1 ${f1(r0 * 0.75)} ${f1(-r0 * 0.6)}"/>` +
+        `<path d="M${f1(ix + r0 * 1.15)} ${f1(iy - r0 * 0.55)}a${f1(r0 * 0.55)} ${f1(r0 * 0.55)} 0 0 0 ${f1(-r0 * 0.75)} ${f1(-r0 * 0.6)}"/>` +
+        `<path d="M${f1(ix - r0 * 0.7)} ${f1(iy + r0 * 1.2)}l${f1(-r0 * 0.25)} ${f1(r0 * 0.3)}M${f1(ix + r0 * 0.7)} ${f1(iy + r0 * 1.2)}l${f1(r0 * 0.25)} ${f1(r0 * 0.3)}"/></g>`);
+    }
+  }
+
+  // Hands: computed every frame from the real time (KST = UTC+9, no DST), never accumulated.
+  let anaRaf = 0;
+  function analogFrame() {
+    anaRaf = 0;
+    if ($('clock').dataset.face !== 'analog' || document.hidden) return;
+    buildAnalog();
+    if (ana) {
+      const t = (Date.now() + 9 * 3600e3) % 86400e3;
+      const ms = t % 1000, s = Math.floor(t / 1000) % 60;
+      let sec;
+      if (cfg.secMode === 'tick') {
+        const k = Math.min(1, ms / CONFIG.tickEase), ease = 1 - Math.pow(1 - k, 3);   // ease-out into each second
+        sec = s - 1 + ease;
+      } else sec = s + ms / 1000;
+      const min = Math.floor(t / 60000) % 60 + (Math.floor(t / 1000) % 60 + ms / 1000) / 60;
+      const hr = (Math.floor(t / 3600000) % 12) + min / 60;
+      const { cx, cy } = ana;
+      $('aS').setAttribute('transform', `rotate(${(sec * 6).toFixed(3)} ${cx} ${cy})`);
+      $('aM').setAttribute('transform', `rotate(${(min * 6).toFixed(3)} ${cx} ${cy})`);
+      $('aH').setAttribute('transform', `rotate(${(hr * 30).toFixed(3)} ${cx} ${cy})`);
+    }
+    anaRaf = requestAnimationFrame(analogFrame);
+  }
+  function startAnalog() { if (!anaRaf) anaRaf = requestAnimationFrame(analogFrame); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) startAnalog(); });
+  new ResizeObserver(() => { if ($('clock').dataset.face === 'analog') { ana = null; buildAnalog(); startAnalog(); } }).observe($('anaSvg'));
+  if (document.fonts) document.fonts.ready.then(() => { ana = null; if ($('clock').dataset.face === 'analog') buildAnalog(); });
+
+  function applyAccent() {
+    document.documentElement.style.setProperty('--accent', /^#[0-9a-f]{6}$/i.test(cfg.accent) ? cfg.accent : '#F59A4A');
+  }
 
   // STACK digits: each digit is its own span, and only the digit that changed pops in.
   function setDigits(el, str) {
@@ -797,13 +954,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const face = $('clock').dataset.face;
     const h = +p.hour, m = +p.minute, sec = +p.second;
     if (face === 'analog') {
-      buildAnalog();
-      if (!ana) return;
-      const { cx, cy } = ana;
-      $('aH').setAttribute('transform', `rotate(${(h % 12) * 30 + m * 0.5 + sec / 120} ${cx} ${cy})`);
-      $('aM').setAttribute('transform', `rotate(${m * 6 + sec * 0.1} ${cx} ${cy})`);
-      $('aS').setAttribute('transform', `rotate(${sec * 6} ${cx} ${cy})`);
-      $('aDate').textContent = `${p.month}/${p.day} ${WD[p.weekday] || ''}`;
+      buildAnalog(); drawSlots(false); startAnalog();
     } else if (face === 'led') {
       (p.hour + p.minute + p.second).split('').forEach((c, i) => setDigit(ledDigits[i], +c));
       $('lDate').innerHTML = dateHtml(p);
@@ -897,11 +1048,24 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   $('nBright').addEventListener('input', nightPreview);
   $('nRed').addEventListener('input', nightPreview);
   $('scheme').addEventListener('change', () => { root.dataset.scheme = $('scheme').value; });
-  dlg.addEventListener('close', () => { applyScheme(); root.classList.remove('preview'); setNight(nightOn); tick(); });
+  // accent swatches (live preview; Cancel restores)
+  let pendingAccent = cfg.accent;
+  $('swatches').innerHTML = ACCENTS.map(([n, c]) =>
+    `<button type="button" role="radio" aria-checked="false" aria-label="${n}" title="${n}" data-c="${c}" style="background:${c}"></button>`).join('');
+  function pickAccent(c) {
+    pendingAccent = c;
+    for (const b of $('swatches').children) b.setAttribute('aria-checked', String(b.dataset.c.toLowerCase() === c.toLowerCase()));
+    $('accCustom').value = c;
+    root.style.setProperty('--accent', c);
+  }
+  $('swatches').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) pickAccent(b.dataset.c); });
+  $('accCustom').addEventListener('input', () => pickAccent($('accCustom').value));
+  dlg.addEventListener('close', () => { applyScheme(); applyAccent(); root.classList.remove('preview'); setNight(nightOn); tick(); });
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
     $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view; $('scheme').value = cfg.scheme;
+    $('secMode').value = cfg.secMode; $('alarm').value = cfg.alarm; pickAccent(cfg.accent);
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -917,7 +1081,9 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const moved = lat !== cfg.lat || lon !== cfg.lon;
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
-      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value, scheme: $('scheme').value };
+      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value, scheme: $('scheme').value,
+      accent: pendingAccent, secMode: $('secMode').value, alarm: $('alarm').value };
+    applyAccent(); if (ana) ana.slotKey = '';
     applyScheme();
     setFace(cfg.face, false); applyView();
     lastAuto = null; nightOverride = null;
@@ -1017,6 +1183,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   wake();
 
   applyScheme();
+  applyAccent();
   setFace(cfg.face, false);
   applyView();
   tick();
