@@ -141,6 +141,33 @@ body {
   position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); pointer-events: none;
   font: 13px/1 var(--f-mono); letter-spacing: .2em; color: var(--dim); opacity: 0; transition: opacity .5s ease; white-space: nowrap;
 }
+/* ---------- long-press color picker (StandBy-style edit mode) ---------- */
+.clock { -webkit-touch-callout: none; transition: transform .35s cubic-bezier(.2, .9, .3, 1); }
+:root.editing .clock { transform: scale(.93); }
+.picker-back { position: fixed; inset: 0; z-index: 20; background: transparent; }
+.picker {
+  position: fixed; z-index: 21; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%); width: min(560px, calc(100% - 24px));
+  background: color-mix(in srgb, #141414 88%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border-radius: 22px; padding: 12px 14px 16px; color: #f2f2f2; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  animation: sheetUp .35s cubic-bezier(.2, .9, .3, 1);
+}
+@keyframes sheetUp { from { transform: translate(-50%, 30%); opacity: 0; } }
+.picker-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; margin-bottom: 12px; }
+.pk-title { text-align: center; font-weight: 600; font-size: 15px; letter-spacing: .04em; }
+.pk-btn { border: 0; background: #2c2c2e; color: #f2f2f2; font: 600 15px/1 inherit; font-family: inherit; height: 34px; min-width: 34px; padding: 0 12px; border-radius: 17px; cursor: pointer; }
+.pk-done { background: #0a84ff; color: #fff; }
+.pk-btn:focus-visible, .pk-sw:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.pk-row { display: flex; gap: 14px; overflow-x: auto; padding: 6px 4px 2px; scroll-snap-type: x mandatory; justify-content: safe center; }
+.pk-item { display: grid; justify-items: center; gap: 6px; flex: none; scroll-snap-align: center; font-size: 11px; letter-spacing: .08em; color: #a1a1a6; }
+.pk-sw { width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; box-shadow: 0 0 0 3px #141414; transition: box-shadow .2s, transform .2s; }
+.pk-sw[aria-checked="true"] { box-shadow: 0 0 0 3px #141414, 0 0 0 5px #fff; transform: scale(1.06); }
+.pk-item:has([aria-checked="true"]) { color: #f2f2f2; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .picker { padding: 8px 12px 10px; }
+  .picker-head { margin-bottom: 6px; }
+  .pk-sw { width: 44px; height: 44px; }
+}
 :root.recolor *, :root.recolor *::before, :root.recolor *::after {
   transition: color .5s ease, background-color .5s ease, border-color .5s ease, outline-color .5s ease, fill .5s ease, stroke .5s ease !important;
 }
@@ -370,6 +397,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 
 @media (prefers-reduced-motion: reduce) {
   .clock.swap > * { animation: none; }
+  .clock, .picker { transition: none; animation: none; }
   :root.recolor * { transition: none !important; }
   .stack .dg.pop { animation: none; }
   .stripes, .hm .colon { animation: none; }
@@ -435,6 +463,16 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     </div>
     <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
   </section>
+</div>
+
+<div class="picker-back" id="pickerBack" hidden></div>
+<div class="picker" id="picker" hidden role="dialog" aria-label="색 테마 고르기">
+  <div class="picker-head">
+    <button type="button" class="pk-btn" id="pkCancel" aria-label="취소">✕</button>
+    <span class="pk-title">색 COLOR</span>
+    <button type="button" class="pk-btn pk-done" id="pkDone">완료</button>
+  </div>
+  <div class="pk-row" id="pkRow" role="radiogroup" aria-label="색 테마"></div>
 </div>
 
 <dialog id="dlg">
@@ -972,14 +1010,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   let recolorTimer = 0;
   function stepScheme(d) {
     const i = Math.max(0, SCHEMES.indexOf(cfg.scheme));
-    cfg.scheme = SCHEMES[(i + d + SCHEMES.length) % SCHEMES.length];
+    setScheme(SCHEMES[(i + d + SCHEMES.length) % SCHEMES.length], true);
     store();
-    const root = document.documentElement;
-    root.classList.add('recolor');
-    applyScheme();
-    clearTimeout(recolorTimer);
-    recolorTimer = setTimeout(() => root.classList.remove('recolor'), 650);
-    toast(`${cfg.scheme.toUpperCase()} · ${SCHEMES.indexOf(cfg.scheme) + 1}/${SCHEMES.length}`);
   }
   function stepFace(d) {
     const i = FACES.indexOf($('clock').dataset.face);
@@ -998,18 +1030,76 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   function toggleView() { cfg.view = cfg.view === 'clock' ? 'panel' : 'clock'; store(); applyView(); }
   $('viewBtn').addEventListener('click', toggleView);
 
+  // ----- long-press color picker -----
+  const PALETTES = {   // four colors of each theme, for the swatches (time / info / accent / label)
+    signal: ['#ff4b2b', '#74e37e', '#ffb23e', '#f2d23c'], tide: ['#3ec5ff', '#7cf5c4', '#ff8a5c', '#ffd166'],
+    sunset: ['#ff5c8a', '#8fd3ff', '#ffa64d', '#ffe066'], meadow: ['#a3e635', '#67e8f9', '#fb923c', '#fde047'],
+    neon: ['#ff3fa4', '#3fe0ff', '#ffd23f', '#b18cff'],
+  };
+  $('pkRow').innerHTML = SCHEMES.map((k) => {
+    const [a, b, c, d] = PALETTES[k];
+    return `<div class="pk-item"><button type="button" class="pk-sw" role="radio" aria-checked="false" aria-label="${k}" data-k="${k}"
+      style="background: conic-gradient(from -45deg, ${a} 0 25%, ${b} 0 50%, ${c} 0 75%, ${d} 0)"></button>${k.toUpperCase()}</div>`;
+  }).join('');
+  let pickerFrom = null;
+  function markPicked() {
+    for (const b of $('pkRow').querySelectorAll('.pk-sw')) b.setAttribute('aria-checked', String(b.dataset.k === cfg.scheme));
+  }
+  function openPicker() {
+    if (!$('picker').hidden) return;
+    pickerFrom = cfg.scheme;
+    document.documentElement.classList.add('editing');
+    $('picker').hidden = false; $('pickerBack').hidden = false;
+    markPicked();
+    $('pkRow').querySelector('[aria-checked="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    try { navigator.vibrate?.(10); } catch {}
+  }
+  function closePicker(keep) {
+    if ($('picker').hidden) return;
+    if (!keep && pickerFrom && pickerFrom !== cfg.scheme) setScheme(pickerFrom, false);
+    store();
+    document.documentElement.classList.remove('editing');
+    $('picker').hidden = true; $('pickerBack').hidden = true;
+  }
+  function setScheme(k, announce) {
+    const root = document.documentElement;
+    cfg.scheme = k;
+    root.classList.add('recolor'); applyScheme();
+    clearTimeout(recolorTimer);
+    recolorTimer = setTimeout(() => root.classList.remove('recolor'), 650);
+    markPicked();
+    if (announce) toast(`${k.toUpperCase()} · ${SCHEMES.indexOf(k) + 1}/${SCHEMES.length}`);
+  }
+  $('pkRow').addEventListener('click', (e) => { const b = e.target.closest('.pk-sw'); if (b) setScheme(b.dataset.k, false); });
+  $('pkDone').addEventListener('click', () => closePicker(true));
+  $('pkCancel').addEventListener('click', () => closePicker(false));
+  $('pickerBack').addEventListener('click', () => closePicker(true));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePicker(false); });
+
   {
-    let x0 = null, y0 = null;
+    let x0 = null, y0 = null, pressTimer = 0, longPressed = false;
     const clock = $('clock');
-    clock.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; });
+    const LONG_MS = 500;
+    clock.addEventListener('contextmenu', (e) => e.preventDefault());   // no callout / menu on long press
+    clock.addEventListener('pointerdown', (e) => {
+      x0 = e.clientX; y0 = e.clientY; longPressed = false;
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => { longPressed = true; openPicker(); }, LONG_MS);
+    });
+    clock.addEventListener('pointermove', (e) => {
+      if (y0 !== null && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) clearTimeout(pressTimer);   // moving = swipe, not a press
+    });
     clock.addEventListener('pointerup', (e) => {
+      clearTimeout(pressTimer);
       if (y0 === null) return;
+      if (longPressed) { x0 = y0 = null; return; }
+      if (!$('picker').hidden) { x0 = y0 = null; return; }
       const dx = e.clientX - x0, dy = e.clientY - y0; x0 = y0 = null;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) stepScheme(dx < 0 ? 1 : -1);  // swipe left: next theme, right: previous
       else if (Math.abs(dy) > 30) stepFace(dy < 0 ? 1 : -1);  // swipe up: next style, down: previous
       else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) stepFace(1);  // tap: next style
     });
-    clock.addEventListener('pointercancel', () => { x0 = y0 = null; });
+    clock.addEventListener('pointercancel', () => { clearTimeout(pressTimer); x0 = y0 = null; });
   }
 
   // ----- night mode -----
