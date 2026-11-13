@@ -153,6 +153,67 @@ body {
   .temp { font-size: calc(16 * var(--u)); }
 }
 
+/* ---------- StandBy: phone on its side ----------
+   Pure black, no bezel. Left half: a huge clock. Right half: one widget at a time
+   (period / D-day / outside), rotating every 10 s; tap or swipe to change. */
+.dots { display: none; }
+@media (orientation: landscape) and (max-height: 540px) {
+  body { background: #000; padding-block: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-bottom, 0px)); }
+  .frame { grid-template-columns: minmax(0, 1fr); background: #000; box-shadow: none; padding: 0; border-radius: 0; gap: 0; }
+  .frame::after { border-radius: 0; opacity: .6; }
+  .frame > * { --u: 1cqh; }
+  /* rail collapses to a small SYNC chip in the top-left corner */
+  .rail { position: absolute; top: 0; left: 0; z-index: 2; display: block; }
+  .rail .meta, .stripes, .status { display: none; }
+  .sync { font-size: 4.2cqh; padding: 1.6cqh 2.4cqh .8cqh; opacity: .55; border-radius: 1.2cqh; }
+  .sync.off { outline-width: 2px; outline-offset: -2px; }
+
+  .main { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3cqw; position: relative; padding-right: 3.2cqw; }
+  .row { display: contents; }
+  .clock { grid-area: 1 / 1; border: 0; align-content: center; gap: 2cqh; }
+  .date { font-size: min(10cqh, 4.6cqw); }
+  .time { flex-direction: column; align-items: center; gap: 0; }
+  .hm { font-size: min(62cqh, 20cqw); line-height: .8; text-shadow: 0 0 4cqh rgba(255,75,43,.45); }
+  .ss { font-size: min(11cqh, 5cqw); padding: 0; letter-spacing: .1em; }
+
+  .w {
+    grid-area: 1 / 2; border-radius: 6cqh; border-width: 2px; background: #0d0b09;
+    flex-direction: column; align-items: flex-start; justify-content: center; gap: 3cqh;
+    padding: 7cqh 9cqh 7cqh 7cqh !important;
+    opacity: 0; transform: scale(.94); pointer-events: none;
+    transition: opacity .45s ease, transform .45s ease;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+  .w.on { opacity: 1; transform: none; pointer-events: auto; }
+  .w .tag { grid-auto-flow: column; align-items: baseline; gap: 2cqh; }
+  .w .tag .ko { font-size: 8cqh; }
+  .w .tag .en { font-size: 4.4cqh; margin: 0; }
+  .w .body { width: 100%; gap: 3cqh; flex: none; }
+  .w .val { font-size: 17cqh; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: .95; }
+  .w .bar { height: 3.4cqh; border-width: 2px; }
+  .w .count { font-size: 4.4cqh; letter-spacing: .06em; }
+  .dday .top { flex-direction: column; align-items: flex-start; gap: 1cqh; }
+  .dnum { font-size: 34cqh; line-height: .85; }
+  .dday .val { font-size: 12cqh; }
+  .temp { font-size: 38cqh; padding: 0; }
+  .ext { justify-content: center; }
+  .hazard { display: none; }
+  .w::after {  /* thin hazard band along the top edge instead of the side strip */
+    content: ""; position: absolute; left: 7cqh; right: 7cqh; top: 0; height: 2.2cqh;
+    background: repeating-linear-gradient(-45deg, var(--yellow) 0 1.6cqh, #000 1.6cqh 3.2cqh);
+    border-radius: 0 0 1cqh 1cqh;
+  }
+  .ext::after { background: repeating-linear-gradient(45deg, var(--red) 0 1.6cqh, #000 1.6cqh 3.2cqh); }
+  #wPeriod::after { background: repeating-linear-gradient(-45deg, var(--green) 0 1.6cqh, #000 1.6cqh 3.2cqh); }
+
+  .dots { display: grid; gap: 2.2cqh; position: absolute; right: .4cqw; top: 50%; transform: translateY(-50%); }
+  .dots i { width: 1.8cqh; height: 1.8cqh; border-radius: 50%; background: var(--dim); opacity: .5; transition: background .3s, opacity .3s; }
+  .dots i.on { background: var(--amber); opacity: 1; }
+}
+@media (orientation: landscape) and (max-height: 540px) and (prefers-reduced-motion: reduce) {
+  .w { transition: none; transform: none; }
+}
+
 /* ---------- settings ---------- */
 dialog {
   background: var(--panel); color: var(--amber); border: 2px solid var(--line);
@@ -201,7 +262,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     </div>
 
     <div class="row">
-      <div class="box cell">
+      <div class="box cell w" id="wPeriod">
         <div class="tag"><span class="ko">교시</span><span class="en">PERIOD</span></div>
         <div class="body">
           <div class="val" id="period">—</div>
@@ -209,7 +270,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
           <div class="count" id="count">ENDS --:--</div>
         </div>
       </div>
-      <div class="box cell dday">
+      <div class="box cell dday w" id="wDday">
         <div class="tag"><span class="ko">디데이</span><span class="en">D-DAY</span></div>
         <div class="body">
           <div class="top"><span class="dnum" id="dnum">D-?</span><span class="val" id="dname">—</span></div>
@@ -219,11 +280,12 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       </div>
     </div>
 
-    <div class="box cell ext">
+    <div class="box cell ext w" id="wExt">
       <div class="tag"><span class="ko">외부</span><span class="en">EXTERNAL</span></div>
       <div class="temp stale" id="temp">--.-°C</div>
       <div class="hazard r" aria-hidden="true"></div>
     </div>
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
   </section>
 </div>
 
@@ -479,6 +541,29 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       else await document.documentElement.requestFullscreen();
     } catch {}
     dlg.close();
+  });
+
+  // ----- StandBy widget stack (phone landscape) -----
+  const standby = matchMedia('(orientation: landscape) and (max-height: 540px)');
+  const widgets = [$('wPeriod'), $('wDday'), $('wExt')];
+  const dots = [...document.querySelectorAll('.dots i')];
+  let wi = 0, lastSwitch = Date.now();
+  function showW(i) {
+    wi = (i + widgets.length) % widgets.length; lastSwitch = Date.now();
+    widgets.forEach((w, k) => w.classList.toggle('on', k === wi));
+    dots.forEach((d, k) => d.classList.toggle('on', k === wi));
+  }
+  showW(0);
+  setInterval(() => { if (standby.matches && !dlg.open && Date.now() - lastSwitch >= 10000) showW(wi + 1); }, 1000);
+  let y0 = null;
+  widgets.forEach((w) => {
+    w.addEventListener('click', () => { if (standby.matches) showW(wi + 1); });
+    w.addEventListener('touchstart', (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+    w.addEventListener('touchend', (e) => {
+      if (!standby.matches || y0 === null) return;
+      const dy = e.changedTouches[0].clientY - y0; y0 = null;
+      if (Math.abs(dy) > 30) { e.preventDefault(); showW(wi + (dy < 0 ? 1 : -1)); }
+    });
   });
 
   // Keep the screen awake while visible (ignored if refused).
