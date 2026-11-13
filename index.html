@@ -302,6 +302,31 @@ body {
   .w { transition: none !important; }
 }
 
+/* ---------- Clock only: full screen clock, landscape (phone, iPad, computer) ----------
+   Comes after the StandBy block and uses :root.clockonly so it wins over both landscape layouts. */
+.vbtn { display: none; }
+@media (orientation: landscape) {
+  .vbtn { display: block; }
+  :root.clockonly body { background: var(--bg); }
+  :root.clockonly .frame { grid-template-columns: minmax(0, 1fr); background: var(--bg); box-shadow: none; padding: 0; border-radius: 0; gap: 0; overflow: clip; }
+  :root.clockonly .frame::after { border-radius: 0; opacity: .6; }
+  :root.clockonly .rail { position: absolute; top: 0; left: 0; z-index: 2; display: block; }
+  :root.clockonly .rail .meta, :root.clockonly .stripes, :root.clockonly .status { display: none; }
+  :root.clockonly .ctl { display: flex; gap: 8px; opacity: .45; transition: opacity .3s; }
+  :root.clockonly .ctl:hover, :root.clockonly .ctl:focus-within { opacity: 1; }
+  :root.clockonly .ctl .sync { font-size: clamp(12px, 4cqh, 18px); padding: .5em .8em .25em; border-radius: .4em; outline-width: 2px; outline-offset: -2px; opacity: 1; }
+  :root.clockonly .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0; padding: 0; }
+  :root.clockonly .row { display: contents; }
+  :root.clockonly .cell, :root.clockonly .dots { display: none; }
+  :root.clockonly .clock { grid-area: 1 / 1; border: 0; align-content: center; gap: 3cqh; }
+  :root.clockonly .date { font-size: min(9cqh, 4cqw); }
+  :root.clockonly .time { flex-direction: row; align-items: flex-end; gap: 1.5cqw; }
+  :root.clockonly .hm { font-size: min(72cqh, 34cqw); line-height: .8; text-shadow: 0 0 4cqh rgba(255,75,43,.4); }
+  :root.clockonly .ss { font-size: min(15cqh, 7cqw); padding: 0 0 1cqh; letter-spacing: .06em; }
+  :root.clockonly.night .hm { text-shadow: none; }
+  :root.clockonly .clock .analog { top: clamp(36px, 8cqh, 60px); }
+}
+
 /* ---------- settings ---------- */
 dialog {
   background: var(--panel); color: var(--amber); border: 2px solid var(--line);
@@ -346,6 +371,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     <div class="ctl">
       <button class="sync" id="sync" type="button" title="설정 열기 (Settings)">SYNC</button>
       <button class="sync nbtn" id="nightBtn" type="button" aria-pressed="false" title="야간 모드 켜기/끄기">NIGHT</button>
+      <button class="sync nbtn vbtn" id="viewBtn" type="button" aria-pressed="false" title="시계만 보기 (가로 화면)">CLOCK</button>
     </div>
     <div class="meta" id="meta">KST · UTC+9<br>WX LINK<br>STANDBY</div>
     <div class="stripes" aria-hidden="true"></div>
@@ -416,6 +442,13 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       <label for="lon">경도 LON<input id="lon" inputmode="decimal"></label>
     </div>
     <p class="hint">외부 기온: Open-Meteo 현재 기온(temperature_2m), 15분마다 갱신. 기본값은 서울. claude.ai 미리보기 안에서는 외부 접속이 막혀 표시되지 않습니다.</p>
+    <label for="view">가로 화면 보기 LANDSCAPE VIEW
+      <select id="view">
+        <option value="panel">시계 + 위젯</option>
+        <option value="clock">시계만</option>
+      </select>
+    </label>
+    <p class="hint">가로 화면(휴대폰·패드·컴퓨터)에서만 적용됩니다. CLOCK 버튼이나 시계를 좌우로 밀어서도 바꿀 수 있습니다.</p>
     <label for="face">시계 스타일 CLOCK STYLE
       <select id="face">
         <option value="retro">RETRO — 큰 디지털</option>
@@ -517,7 +550,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', ...NIGHT_DEFAULTS };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', ...NIGHT_DEFAULTS };
 
   const $ = (id) => document.getElementById(id);
   let cfg = load();
@@ -781,17 +814,30 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     cfg.face = FACES[(i + d + FACES.length) % FACES.length];
     store(); setFace(cfg.face, true);
   }
+  // ----- view: clock + widgets, or clock only (landscape) -----
+  const landscape = matchMedia('(orientation: landscape)');
+  function applyView() {
+    const only = cfg.view === 'clock';
+    document.documentElement.classList.toggle('clockonly', only);
+    $('viewBtn').classList.toggle('on', only);
+    $('viewBtn').setAttribute('aria-pressed', String(only));
+    requestAnimationFrame(() => { if (typeof layout === 'function') layout(false); drawFaces(kstNow()); });
+  }
+  function toggleView() { cfg.view = cfg.view === 'clock' ? 'panel' : 'clock'; store(); applyView(); }
+  $('viewBtn').addEventListener('click', toggleView);
+
   {
-    let y0 = null;
+    let x0 = null, y0 = null;
     const clock = $('clock');
-    clock.addEventListener('pointerdown', (e) => { y0 = e.clientY; });
+    clock.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; });
     clock.addEventListener('pointerup', (e) => {
       if (y0 === null) return;
-      const dy = e.clientY - y0; y0 = null;
-      if (Math.abs(dy) > 30) stepFace(dy < 0 ? 1 : -1);  // swipe up: next, down: previous
-      else if (Math.abs(dy) < 8) stepFace(1);             // tap: next
+      const dx = e.clientX - x0, dy = e.clientY - y0; x0 = y0 = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (landscape.matches) toggleView(); }  // swipe sideways: view
+      else if (Math.abs(dy) > 30) stepFace(dy < 0 ? 1 : -1);  // swipe up: next style, down: previous
+      else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) stepFace(1);  // tap: next style
     });
-    clock.addEventListener('pointercancel', () => { y0 = null; });
+    clock.addEventListener('pointercancel', () => { x0 = y0 = null; });
   }
 
   // ----- night mode -----
@@ -838,7 +884,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
-    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face;
+    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view;
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -854,8 +900,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const moved = lat !== cfg.lat || lon !== cfg.lon;
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
-      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value };
-    setFace(cfg.face, false);
+      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value };
+    setFace(cfg.face, false); applyView();
     lastAuto = null; nightOverride = null;
     allEntries = e; ddays = d; store();
     if (moved) wx.next = 0;
@@ -953,6 +999,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   wake();
 
   setFace(cfg.face, false);
+  applyView();
   tick();
   setTimeout(function loop() { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); }, 1000 - (Date.now() % 1000) + 5);
 })();
