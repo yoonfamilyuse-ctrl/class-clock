@@ -1,0 +1,44 @@
+# Class Clock
+
+레트로 터미널 스타일의 학교·기숙사용 시계입니다. HTML 파일 하나(`index.html`)로 동작하고, 빌드 과정이 없습니다.
+
+- 사이트: https://yoonfamilyuse-ctrl.github.io/class-clock/
+
+## 화면
+
+| 칸 | 내용 |
+|---|---|
+| 시계 | 한국 표준시(KST, Asia/Seoul) 날짜·요일, 시:분, 초 |
+| 교시 PERIOD | 지금 일정 이름, 끝나는 시각, 남은 시간, 진행 막대. 일정 사이는 `BREAK`, 첫 일정 전은 `STANDBY`, 마지막 일정 뒤는 `DISMISSED`, 일정이 없는 요일은 `DAY OFF` |
+| 디데이 D-DAY | 가장 가까운 날짜를 크게, 그다음 두 개를 작게 표시. 지난 날짜는 자동으로 빠짐 |
+| 외부 EXTERNAL | 현재 기온, 15분마다 갱신 |
+
+배치는 화면 비율에 따라 바뀝니다. 가로 화면(맥북, 패드·휴대폰 가로)은 좌우 배치, 세로 화면(휴대폰, 패드 세로)은 위아래로 쌓입니다. iPhone·iPad에서는 Safari 공유 → "홈 화면에 추가"로 앱처럼 열 수 있습니다.
+
+## 설정
+
+왼쪽 위 `SYNC` 버튼을 누르면 설정이 열립니다. 설정은 기기별로 브라우저(localStorage)에 저장됩니다.
+
+**시간표**: 한 줄에 하나씩 씁니다.
+
+```
+[요일] HH:MM-HH:MM 이름
+월화수목금 07:00-07:50 아침식사
+월 08:30-09:20 FREE
+# 메모 줄
+```
+
+요일은 `월`, `월화수목금`, `매일`처럼 앞에 붙입니다. 요일을 생략하면 매일 적용됩니다.
+
+**디데이**: `YYYY-MM-DD 이름` 형식으로 한 줄에 하나씩 씁니다. 예: `2026-12-15 기말고사`
+
+**위치**: 기온을 가져올 위도·경도입니다. 기본값은 서울(37.5665, 126.978)입니다.
+
+## 데이터 출처
+
+- 기온: [Open-Meteo Forecast API](https://open-meteo.com/en/docs), `current=temperature_2m` (지상 2 m 기온, °C). 키 없이 쓸 수 있는 무료 API이며, 데이터 라이선스는 CC BY 4.0입니다. claude.ai artifact 미리보기 안에서는 외부 접속이 막혀 기온이 표시되지 않습니다.
+- 글꼴: Google Fonts의 Teko, Black Han Sans, Share Tech Mono.
+
+## 배포
+
+`main`에 푸시하면 `.github/workflows/deploy.yml`이 GitHub Pages로 배포합니다. 처음 한 번은 저장소 **Settings → Pages → Source를 "GitHub Actions"**로 설정해야 합니다.
