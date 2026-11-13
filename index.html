@@ -141,6 +141,9 @@ body {
   position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); pointer-events: none;
   font: 13px/1 var(--f-mono); letter-spacing: .2em; color: var(--dim); opacity: 0; transition: opacity .5s ease; white-space: nowrap;
 }
+:root.recolor *, :root.recolor *::before, :root.recolor *::after {
+  transition: color .5s ease, background-color .5s ease, border-color .5s ease, outline-color .5s ease, fill .5s ease, stroke .5s ease !important;
+}
 .facename.show { opacity: 1; transition-duration: .1s; }
 
 .analog { padding: 0; background: var(--bg); grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
@@ -367,6 +370,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 
 @media (prefers-reduced-motion: reduce) {
   .clock.swap > * { animation: none; }
+  :root.recolor * { transition: none !important; }
   .stack .dg.pop { animation: none; }
   .stripes, .hm .colon { animation: none; }
   .bar i { transition: none; }
@@ -455,7 +459,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
         <option value="clock">시계만</option>
       </select>
     </label>
-    <p class="hint">가로 화면(휴대폰·패드·컴퓨터)에서만 적용됩니다. CLOCK 버튼이나 시계를 좌우로 밀어서도 바꿀 수 있습니다.</p>
+    <p class="hint">가로 화면(휴대폰·패드·컴퓨터)에서만 적용됩니다. CLOCK 버튼으로도 바꿀 수 있습니다.</p>
     <label for="scheme">색 테마 COLOR
       <select id="scheme">
         <option value="signal">SIGNAL — 빨강·초록·주황·노랑</option>
@@ -465,6 +469,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
         <option value="neon">NEON — 마젠타·시안·노랑·보라</option>
       </select>
     </label>
+    <p class="hint">시계를 왼쪽으로 밀면 다음 테마, 오른쪽으로 밀면 이전 테마로 바뀝니다.</p>
     <fieldset class="night-set" id="anaSet">
       <legend>아날로그 ANALOG</legend>
       <div class="pair">
@@ -954,11 +959,27 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     drawFaces(kstNow());
     if (!announce) return;
     clock.classList.remove('swap'); void clock.offsetWidth; clock.classList.add('swap');
+    toast(`${clock.dataset.face.toUpperCase()} · ${FACES.indexOf(clock.dataset.face) + 1}/${FACES.length}`);
+  }
+  function toast(text) {
     const fn = $('faceName');
-    fn.textContent = `${clock.dataset.face.toUpperCase()} · ${FACES.indexOf(clock.dataset.face) + 1}/${FACES.length}`;
+    fn.textContent = text;
     fn.classList.add('show');
     clearTimeout(faceTimer);
-    faceTimer = setTimeout(() => { fn.classList.remove('show'); clock.classList.remove('swap'); }, 1300);
+    faceTimer = setTimeout(() => { fn.classList.remove('show'); $('clock').classList.remove('swap'); }, 1300);
+  }
+  // Swipe the clock sideways: next / previous color theme, with a short cross-fade.
+  let recolorTimer = 0;
+  function stepScheme(d) {
+    const i = Math.max(0, SCHEMES.indexOf(cfg.scheme));
+    cfg.scheme = SCHEMES[(i + d + SCHEMES.length) % SCHEMES.length];
+    store();
+    const root = document.documentElement;
+    root.classList.add('recolor');
+    applyScheme();
+    clearTimeout(recolorTimer);
+    recolorTimer = setTimeout(() => root.classList.remove('recolor'), 650);
+    toast(`${cfg.scheme.toUpperCase()} · ${SCHEMES.indexOf(cfg.scheme) + 1}/${SCHEMES.length}`);
   }
   function stepFace(d) {
     const i = FACES.indexOf($('clock').dataset.face);
@@ -984,7 +1005,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     clock.addEventListener('pointerup', (e) => {
       if (y0 === null) return;
       const dx = e.clientX - x0, dy = e.clientY - y0; x0 = y0 = null;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (landscape.matches) toggleView(); }  // swipe sideways: view
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) stepScheme(dx < 0 ? 1 : -1);  // swipe left: next theme, right: previous
       else if (Math.abs(dy) > 30) stepFace(dy < 0 ? 1 : -1);  // swipe up: next style, down: previous
       else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) stepFace(1);  // tap: next style
     });
