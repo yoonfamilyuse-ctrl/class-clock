@@ -23,10 +23,30 @@
   --yellow: #f2d23c;
   --line: #c9923f;
   --dim: #7a6a52;
+  --card: #0d0b09;
+  --ink: #1a0d08;         /* text on filled red/amber buttons */
+  --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
+  --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
   --f-ko: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
   --f-mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+/* Night mode: every color token slides toward one red, so nothing on screen emits white, green or blue light. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root {
+    --bg: color-mix(in srgb, #0a0907, #000 var(--nr));
+    --panel: color-mix(in srgb, #100e0b, #000 var(--nr));
+    --card: color-mix(in srgb, #0d0b09, #050000 var(--nr));
+    --red: color-mix(in srgb, #ff4b2b, #ff2a10 var(--nr));
+    --green: color-mix(in srgb, #74e37e, #c8301a var(--nr));
+    --amber: color-mix(in srgb, #ffb23e, #e3341a var(--nr));
+    --yellow: color-mix(in srgb, #f2d23c, #b02a16 var(--nr));
+    --line: color-mix(in srgb, #c9923f, #5c1a10 var(--nr));
+    --dim: color-mix(in srgb, #7a6a52, #5a2014 var(--nr));
+  }
+}
+:root.night .frame { opacity: var(--nb); transition: opacity .6s ease; }
+:root.night .hm { text-shadow: none; }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -62,11 +82,17 @@ body {
 .rail { display: grid; grid-template-rows: auto auto 1fr 32%; gap: calc(1.2 * var(--u)); min-height: 0; }
 .sync {
   font: 700 calc(3.2 * var(--u))/1 var(--f-digit); letter-spacing: .08em;
-  color: #1a0d08; background: var(--red); border: 0; padding: calc(1.4 * var(--u)) 0 calc(.8 * var(--u));
+  color: var(--ink); background: var(--red); border: 0; padding: calc(1.4 * var(--u)) 0 calc(.8 * var(--u));
   cursor: pointer; transition: background .3s, color .3s;
 }
 .sync.off { background: transparent; color: var(--red); outline: calc(.25 * var(--u)) solid var(--red); outline-offset: calc(-.25 * var(--u)); }
 .sync:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+.ctl { display: grid; gap: calc(.8 * var(--u)); }
+.nbtn {
+  font-size: calc(1.9 * var(--u)); padding: calc(.9 * var(--u)) 0 calc(.5 * var(--u));
+  background: transparent; color: var(--amber); outline: calc(.25 * var(--u)) solid var(--amber); outline-offset: calc(-.25 * var(--u));
+}
+.nbtn.on { background: var(--amber); color: var(--ink); }
 .meta { font-size: calc(1.05 * var(--u)); line-height: 1.5; color: var(--green); letter-spacing: .06em; text-transform: uppercase; }
 .stripes {
   border: calc(.25 * var(--u)) solid var(--line);
@@ -133,6 +159,8 @@ body {
   .rail { grid-template-rows: auto; grid-template-columns: auto 1fr; align-items: center; gap: calc(3 * var(--u)); }
   .stripes, .status { display: none; }
   .sync { font-size: calc(6 * var(--u)); padding: calc(2.4 * var(--u)) calc(4 * var(--u)) calc(1.4 * var(--u)); }
+  .ctl { grid-auto-flow: column; gap: calc(2 * var(--u)); }
+  .nbtn { font-size: calc(4 * var(--u)); padding: calc(2.4 * var(--u)) calc(3 * var(--u)) calc(1.4 * var(--u)); }
   .meta { font-size: calc(2.6 * var(--u)); }
   .main { grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: calc(2.6 * var(--u)); }
   .row { display: contents; }
@@ -169,7 +197,9 @@ body {
   .rail { position: absolute; top: 0; left: 0; z-index: 2; display: block; }
   .rail .meta, .stripes, .status { display: none; }
   .sync { font-size: 4.2cqh; padding: 1.6cqh 2.4cqh .8cqh; opacity: .55; border-radius: 1.2cqh; }
-  .sync.off { outline-width: 2px; outline-offset: -2px; }
+  .sync.off, .nbtn { outline-width: 2px; outline-offset: -2px; }
+  .ctl { display: flex; gap: 1.6cqh; }
+  .nbtn { font-size: 4.2cqh; padding: 1.6cqh 2.4cqh .8cqh; border-radius: 1.2cqh; opacity: .55; }
 
   .main { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3cqw; position: relative; padding-right: 3.2cqw; }
   .row { display: contents; }
@@ -180,7 +210,7 @@ body {
   .ss { font-size: min(11cqh, 5cqw); padding: 0; letter-spacing: .1em; }
 
   .w {
-    grid-area: 1 / 2; border-radius: 6cqh; border-width: 2px; background: #0d0b09;
+    grid-area: 1 / 2; border-radius: 6cqh; border-width: 2px; background: var(--card);
     flex-direction: column; align-items: flex-start; justify-content: center; gap: 3cqh;
     padding: 7cqh 9cqh 7cqh 7cqh !important;
     opacity: 0; pointer-events: none; will-change: transform, opacity;
@@ -221,9 +251,16 @@ body {
 /* ---------- settings ---------- */
 dialog {
   background: var(--panel); color: var(--amber); border: 2px solid var(--line);
-  width: min(600px, calc(100% - 32px)); max-height: calc(100% - 32px); padding: 20px; font-family: var(--f-mono);
+  width: min(600px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; overscroll-behavior: contain; padding: 20px; font-family: var(--f-mono);
 }
 dialog::backdrop { background: rgba(0,0,0,.75); }
+.night-set { border: 1px solid var(--line); padding: 12px 14px 2px; margin: 0 0 14px; }
+.night-set legend { font: 18px/1 var(--f-ko); color: var(--yellow); padding: 0 6px; }
+dialog label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+dialog input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--red); }
+dialog input[type="range"] { padding: 0; border: 0; background: transparent; accent-color: var(--red); height: 28px; }
+dialog output { color: var(--amber); }
+:root.preview dialog::backdrop { background: transparent; }
 dialog h2 { font: 26px/1 var(--f-ko); color: var(--yellow); margin: 0 0 14px; }
 dialog label { display: grid; gap: 6px; font-size: 13px; letter-spacing: .06em; color: var(--green); margin-bottom: 14px; }
 dialog textarea, dialog input {
@@ -238,7 +275,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 .err { color: var(--red); font-size: 13px; min-height: 1.2em; margin: 0 0 10px; }
 .btns { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 .btns button { font: 600 20px/1 var(--f-digit); letter-spacing: .08em; padding: 10px 18px 6px; cursor: pointer; border: 2px solid var(--red); }
-.btns .primary { background: var(--red); color: #1a0d08; }
+.btns .primary { background: var(--red); color: var(--ink); }
 .btns .ghost { background: transparent; color: var(--red); }
 .btns button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
 
@@ -250,7 +287,10 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 
 <div class="frame" id="frame">
   <aside class="rail">
-    <button class="sync" id="sync" type="button" title="설정 열기 (Settings)">SYNC</button>
+    <div class="ctl">
+      <button class="sync" id="sync" type="button" title="설정 열기 (Settings)">SYNC</button>
+      <button class="sync nbtn" id="nightBtn" type="button" aria-pressed="false" title="야간 모드 켜기/끄기">NIGHT</button>
+    </div>
     <div class="meta" id="meta">KST · UTC+9<br>WX LINK<br>STANDBY</div>
     <div class="stripes" aria-hidden="true"></div>
     <div class="box status"><p>SYS CHECK: <b>NOMINAL</b><br>SCHEDULE: <b id="schedCount">0</b> · D-DAY: <b id="ddCount">0</b></p></div>
@@ -309,6 +349,21 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       <label for="lon">경도 LON<input id="lon" inputmode="decimal"></label>
     </div>
     <p class="hint">외부 기온: Open-Meteo 현재 기온(temperature_2m), 15분마다 갱신. 기본값은 서울. claude.ai 미리보기 안에서는 외부 접속이 막혀 표시되지 않습니다.</p>
+    <fieldset class="night-set">
+      <legend>야간 모드 NIGHT</legend>
+      <label class="check" for="nAuto"><input type="checkbox" id="nAuto"> 시간 예약 사용</label>
+      <div class="pair">
+        <label for="nFrom">시작 FROM<input type="time" id="nFrom"></label>
+        <label for="nTo">끝 TO<input type="time" id="nTo"></label>
+      </div>
+      <label for="nBright">밝기 BRIGHTNESS <output id="nBrightOut"></output>
+        <input type="range" id="nBright" min="10" max="100" step="5">
+      </label>
+      <label for="nRed">빨간 정도 RED <output id="nRedOut"></output>
+        <input type="range" id="nRed" min="0" max="100" step="5">
+      </label>
+      <p class="hint">예약 시간이 되면 자동으로 켜지고 끝나면 꺼집니다. NIGHT 버튼으로 언제든 직접 켜고 끌 수 있고, 직접 바꾼 상태는 다음 예약 시각까지 유지됩니다. 밝기와 빨간 정도는 움직이는 동안 바로 미리 보입니다. 화면 자체의 밝기는 아이폰 설정을 따릅니다.</p>
+    </fieldset>
     <p class="err" id="err"></p>
     <div class="btns">
       <button type="button" class="ghost" id="fs">전체화면 FULL</button>
@@ -383,7 +438,9 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   ].join('\n');
   // D-day list. 2027-01-01 is a fixed calendar date; add real exam / vacation dates in Settings.
   const DEFAULT_DD = '2027-01-01 새해';
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978 };
+  // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
+  const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, ...NIGHT_DEFAULTS };
 
   const $ = (id) => document.getElementById(id);
   let cfg = load();
@@ -479,6 +536,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       $('count').textContent = next ? 'STARTS ' + hhmm(next.s) : 'ENDS --:--';
     }
     $('schedCount').textContent = entries.length;
+    updateNight(t);
 
     // ----- D-day (calendar days in KST) -----
     const today = Date.UTC(+p.year, +p.month - 1, +p.day);
@@ -538,10 +596,52 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (!document.hidden && (!wx.ok || Date.now() - wx.okAt > 15 * 60000)) wx.next = 0;
   });
 
+  // ----- night mode -----
+  const root = document.documentElement;
+  const toMin = (hm) => { const [h, m] = String(hm || '0:0').split(':'); return +h * 60 + +m; };
+  // override: null = follow the schedule; true/false = set by the NIGHT button until the schedule next flips.
+  let nightOverride = null, lastAuto = null, nightOn = false;
+  function nightVars(bright, red) {
+    root.style.setProperty('--nb', String(bright / 100));
+    root.style.setProperty('--nr', red + '%');
+  }
+  function setNight(on) {
+    nightOn = on;
+    root.classList.toggle('night', on);
+    if (!on) { root.style.setProperty('--nb', '1'); root.style.setProperty('--nr', '0%'); }
+    else nightVars(cfg.nBright, cfg.nRed);
+    $('nightBtn').classList.toggle('on', on);
+    $('nightBtn').setAttribute('aria-pressed', String(on));
+    document.querySelector('meta[name="theme-color"]').content = on ? '#000000' : '#0a0907';
+  }
+  function updateNight(t) {
+    if (dlg.open) return;  // the dialog is previewing
+    const f = toMin(cfg.nFrom), e = toMin(cfg.nTo);
+    const inWin = f === e ? false : f < e ? t >= f && t < e : t >= f || t < e;
+    const auto = !!cfg.nAuto && inWin;
+    if (lastAuto !== null && auto !== lastAuto) nightOverride = null;  // schedule flipped: drop manual choice
+    lastAuto = auto;
+    const on = nightOverride ?? auto;
+    if (on !== nightOn || on) setNight(on);
+  }
+  $('nightBtn').addEventListener('click', () => { nightOverride = !nightOn; setNight(nightOverride); });
+
   // ----- settings -----
   const dlg = $('dlg');
+  function nightPreview() {
+    $('nBrightOut').textContent = $('nBright').value + '%';
+    $('nRedOut').textContent = $('nRed').value + '%';
+    root.classList.add('night', 'preview');
+    nightVars(+$('nBright').value, +$('nRed').value);
+  }
+  $('nBright').addEventListener('input', nightPreview);
+  $('nRed').addEventListener('input', nightPreview);
+  dlg.addEventListener('close', () => { root.classList.remove('preview'); setNight(nightOn); tick(); });
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
+    $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
+    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed;
+    $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
   $('cancel').addEventListener('click', () => dlg.close());
@@ -554,7 +654,10 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (badD.length) { $('err').textContent = `디데이 ${badD.join(', ')}번째 줄을 읽을 수 없습니다. 형식: 2026-12-15 기말고사`; return; }
     if (!(Math.abs(lat) <= 90) || !(Math.abs(lon) <= 180)) { $('err').textContent = '위도는 -90~90, 경도는 -180~180 사이 숫자로 입력하세요.'; return; }
     const moved = lat !== cfg.lat || lon !== cfg.lon;
-    cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon };
+    if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
+    cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
+      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value };
+    lastAuto = null; nightOverride = null;
     allEntries = e; ddays = d; store();
     if (moved) wx.next = 0;
     dlg.close(); tick();
