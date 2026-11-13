@@ -24,7 +24,10 @@
   --glow: rgba(255,75,43,.35);
   /* ANALOG uses four theme colors: numerals + hour ticks = label color, hands = primary,
      second hand + ring + alarm icon + weekday = accent, alarm time + date = info color */
-  --a-num: var(--yellow); --a-hand: var(--red); --a-acc: var(--amber); --a-info: var(--green);
+  --a-num: var(--yellow); --a-hand: var(--red); --a-acc: var(--amber); --a-acc2: var(--a-acc); --a-info: var(--green);
+  /* ANALOG "APPLE" color mode: white face + accent swatch (acc1: second hand, ring, alarm icon; acc2: weekday) */
+  --acc1: #F5A04A; --acc2: #E5484D;
+  --ap-fg: #ffffff; --ap-acc1: var(--acc1); --ap-acc2: var(--acc2);
   --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
@@ -50,6 +53,9 @@
     --dim: color-mix(in srgb, var(--t-dim), #5a2014 var(--nr));
     --ink: color-mix(in srgb, var(--t-ink), #1a0500 var(--nr));
     --glow: color-mix(in srgb, var(--red) 38%, transparent);
+    --ap-fg: color-mix(in srgb, #ffffff, #ff3b30 var(--nr));
+    --ap-acc1: color-mix(in srgb, var(--acc1), #ff3b30 var(--nr));
+    --ap-acc2: color-mix(in srgb, var(--acc2), #ff3b30 var(--nr));
   }
 }
 :root.night .frame { opacity: var(--nb); transition: opacity .6s ease; }
@@ -158,10 +164,14 @@ body {
 .pk-btn { border: 0; background: #2c2c2e; color: #f2f2f2; font: 600 15px/1 inherit; font-family: inherit; height: 34px; min-width: 34px; padding: 0 12px; border-radius: 17px; cursor: pointer; }
 .pk-done { background: #0a84ff; color: #fff; }
 .pk-btn:focus-visible, .pk-sw:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.pk-row { display: flex; gap: 14px; overflow-x: auto; padding: 6px 4px 2px; scroll-snap-type: x mandatory; justify-content: safe center; }
+.pk-row { display: flex; min-height: 0; gap: 14px; overflow-x: auto; padding: 6px 4px 2px; scroll-snap-type: x mandatory; justify-content: safe center; }
 .pk-item { display: grid; justify-items: center; gap: 6px; flex: none; scroll-snap-align: center; font-size: 11px; letter-spacing: .08em; color: #a1a1a6; }
 .pk-sw { width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; box-shadow: 0 0 0 3px #141414; transition: box-shadow .2s, transform .2s; }
-.pk-sw[aria-checked="true"] { box-shadow: 0 0 0 3px #141414, 0 0 0 5px #fff; transform: scale(1.06); }
+.pk-sw[aria-checked="true"] { box-shadow: 0 0 0 3px #141414, 0 0 0 6px #0a84ff; }
+.pk-label { font-size: 12px; color: #a1a1a6; letter-spacing: .06em; margin: 4px 4px 0; }
+.pk-sw.theme-follow { background: #2c2c2e; color: #f2f2f2; font: 700 10px/1 -apple-system, system-ui, sans-serif; letter-spacing: .04em; }
+/* night: the panel shows only reds (luminance -> red, same idea as StandBy's red tint) */
+:root.night .picker { filter: url(#nightRed); }
 .pk-item:has([aria-checked="true"]) { color: #f2f2f2; }
 @media (orientation: landscape) and (max-height: 540px) {
   .picker { padding: 8px 12px 10px; }
@@ -179,6 +189,12 @@ body {
 .analog .num { fill: var(--a-num); font-family: "Archivo", -apple-system, system-ui, sans-serif; font-stretch: 125%; font-weight: 650; text-anchor: middle; }
 .analog .slot { fill: var(--a-info); fill-opacity: .9; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .analog .acc { fill: var(--a-acc); }
+.analog .acc2 { fill: var(--a-acc2); }
+/* APPLE mode: white numerals, hands, ticks and text on pure black; accents from the swatch */
+:root[data-ana="apple"] .analog { --a-num: var(--ap-fg); --a-hand: var(--ap-fg); --a-info: var(--ap-fg); --a-acc: var(--ap-acc1); --a-acc2: var(--ap-acc2); background: #000; }
+:root[data-ana="apple"] .analog .ring { fill: #000; }
+/* night: numerals as bright as the hands (THEME mode) */
+:root.night .analog { --a-num: var(--a-hand); }
 .analog .accs { stroke: var(--a-acc); fill: none; stroke-linecap: round; }
 .analog .hand { stroke: var(--a-hand); stroke-linecap: round; }
 .analog .sec { stroke: var(--a-acc); stroke-linecap: round; }
@@ -362,6 +378,7 @@ body {
   :root.clockonly.night .hm { text-shadow: none; }
   :root.clockonly .clock .analog { top: clamp(36px, 8cqh, 60px); }
   :root.clockonly:has(.clock[data-face="analog"]) .frame::after { display: none; }   /* flat, no scanlines */
+  :root.clockonly[data-ana="apple"]:has(.clock[data-face="analog"]) { --bg: #000; }
 }
 
 /* ---------- settings ---------- */
@@ -465,6 +482,11 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   </section>
 </div>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="nightRed" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.0489 0.1645 0.0166 0 0  0.0404 0.1359 0.0137 0 0  0 0 0 1 0"/>
+  </filter>
+</svg>
 <div class="picker-back" id="pickerBack" hidden></div>
 <div class="picker" id="picker" hidden role="dialog" aria-label="색 테마 고르기">
   <div class="picker-head">
@@ -472,7 +494,12 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     <span class="pk-title">색 COLOR</span>
     <button type="button" class="pk-btn pk-done" id="pkDone">완료</button>
   </div>
-  <div class="pk-row" id="pkRow" role="radiogroup" aria-label="색 테마"></div>
+  <div class="pk-label">화면 테마 THEME</div>
+  <div class="pk-row" id="pkRow" role="radiogroup" aria-label="화면 테마"></div>
+  <div id="pkAnaWrap">
+    <div class="pk-label">아날로그 색 ANALOG</div>
+    <div class="pk-row" id="pkAna" role="radiogroup" aria-label="아날로그 색"></div>
+  </div>
 </div>
 
 <dialog id="dlg">
@@ -511,6 +538,12 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     <fieldset class="night-set" id="anaSet">
       <legend>아날로그 ANALOG</legend>
       <div class="pair">
+        <label for="anaColor">색 COLOR
+          <select id="anaColor"><option value="theme">테마 따르기</option><option value="apple">흰색 + 강조색 (애플)</option></select>
+        </label>
+        <label for="anaAccent">강조색 ACCENT
+          <select id="anaAccent"></select>
+        </label>
         <label for="secMode">초침 SECOND HAND
           <select id="secMode"><option value="sweep">부드럽게</option><option value="tick">1초씩</option></select>
         </label>
@@ -619,7 +652,21 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', secMode: 'sweep', alarm: '', ...NIGHT_DEFAULTS };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', secMode: 'sweep', alarm: '', anaColor: 'theme', anaAccent: 'classic', ...NIGHT_DEFAULTS };
+  // Apple-style accent swatches for ANALOG (approximate StandBy colors; Classic is two-tone)
+  const ANA_SWATCHES = [
+    { id: 'classic', p: '#F5A04A', s: '#E5484D' }, { id: 'blue', p: '#4BA3F0', s: '#4BA3F0' },
+    { id: 'lavender', p: '#A98BF5', s: '#A98BF5' }, { id: 'pink', p: '#F06A8A', s: '#F06A8A' },
+    { id: 'magenta', p: '#D864B8', s: '#D864B8' }, { id: 'yellow', p: '#F7D547', s: '#F7D547' },
+    { id: 'salmon', p: '#F47E72', s: '#F47E72' }, { id: 'orange', p: '#F8A04E', s: '#F8A04E' },
+    { id: 'green', p: '#62D27E', s: '#62D27E' },
+  ];
+  function applyAnaColor() {
+    const root = document.documentElement;
+    root.dataset.ana = cfg.anaColor === 'apple' ? 'apple' : 'theme';
+    const sw = ANA_SWATCHES.find((x) => x.id === cfg.anaAccent) || ANA_SWATCHES[0];
+    root.style.setProperty('--acc1', sw.p); root.style.setProperty('--acc2', sw.s);
+  }
   const SCHEMES = ['signal', 'tide', 'sunset', 'meadow', 'neon'];
   function applyScheme() {
     document.documentElement.dataset.scheme = SCHEMES.includes(cfg.scheme) ? cfg.scheme : 'signal';
@@ -907,7 +954,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const g = $('anSlots');
     const fs = C.slotCap / C.numCapRatio * H, base = cy + C.slotCap * H / 2;
     const lo = C.slotRingGap * H, hi = ana.num3Inner - C.slotNumGap * H;   // free band on each side
-    let html = `<text class="slot" id="slotR" font-size="${f1(fs)}" y="${f1(base)}"><tspan class="acc">${wd}</tspan> ${day}</text>`;
+    let html = `<text class="slot" id="slotR" font-size="${f1(fs)}" y="${f1(base)}"><tspan class="acc2">${wd}</tspan> ${day}</text>`;
     if (alarm) {
       const [t, ap] = alarm.split('|');
       html += `<text class="slot" id="slotL" font-size="${f1(fs)}" y="${f1(base)}">${t}<tspan font-size="${f1(fs * 0.75)}">${ap}</tspan></text>`;
@@ -1041,22 +1088,33 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     return `<div class="pk-item"><button type="button" class="pk-sw" role="radio" aria-checked="false" aria-label="${k}" data-k="${k}"
       style="background: conic-gradient(from -45deg, ${a} 0 25%, ${b} 0 50%, ${c} 0 75%, ${d} 0)"></button>${k.toUpperCase()}</div>`;
   }).join('');
+  // ANALOG row: "THEME" (follow the screen theme) + Apple accent swatches (two-tone = split in half)
+  $('pkAna').innerHTML = `<div class="pk-item"><button type="button" class="pk-sw theme-follow" role="radio" aria-checked="false" aria-label="theme" data-a="theme">THEME</button>THEME</div>` +
+    ANA_SWATCHES.map((x) => `<div class="pk-item"><button type="button" class="pk-sw" role="radio" aria-checked="false" aria-label="${x.id}" data-a="${x.id}"
+      style="background: ${x.p === x.s ? x.p : `linear-gradient(90deg, ${x.p} 50%, ${x.s} 50%)`}"></button>${x.id.toUpperCase()}</div>`).join('');
+  $('anaAccent').innerHTML = ANA_SWATCHES.map((x) => `<option value="${x.id}">${x.id[0].toUpperCase() + x.id.slice(1)}</option>`).join('');
   let pickerFrom = null;
   function markPicked() {
     for (const b of $('pkRow').querySelectorAll('.pk-sw')) b.setAttribute('aria-checked', String(b.dataset.k === cfg.scheme));
+    const cur = cfg.anaColor === 'apple' ? cfg.anaAccent : 'theme';
+    for (const b of $('pkAna').querySelectorAll('.pk-sw')) b.setAttribute('aria-checked', String(b.dataset.a === cur));
   }
   function openPicker() {
     if (!$('picker').hidden) return;
-    pickerFrom = cfg.scheme;
+    pickerFrom = { scheme: cfg.scheme, anaColor: cfg.anaColor, anaAccent: cfg.anaAccent };
+    $('pkAnaWrap').hidden = $('clock').dataset.face !== 'analog';   // the ANALOG row only while ANALOG is shown
     document.documentElement.classList.add('editing');
     $('picker').hidden = false; $('pickerBack').hidden = false;
     markPicked();
-    $('pkRow').querySelector('[aria-checked="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    for (const row of [$('pkRow'), $('pkAna')]) row.querySelector('[aria-checked="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
     try { navigator.vibrate?.(10); } catch {}
   }
   function closePicker(keep) {
     if ($('picker').hidden) return;
-    if (!keep && pickerFrom && pickerFrom !== cfg.scheme) setScheme(pickerFrom, false);
+    if (!keep && pickerFrom) {
+      cfg.anaColor = pickerFrom.anaColor; cfg.anaAccent = pickerFrom.anaAccent; applyAnaColor();
+      if (pickerFrom.scheme !== cfg.scheme) setScheme(pickerFrom.scheme, false);
+    }
     store();
     document.documentElement.classList.remove('editing');
     $('picker').hidden = true; $('pickerBack').hidden = true;
@@ -1071,6 +1129,15 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (announce) toast(`${k.toUpperCase()} · ${SCHEMES.indexOf(k) + 1}/${SCHEMES.length}`);
   }
   $('pkRow').addEventListener('click', (e) => { const b = e.target.closest('.pk-sw'); if (b) setScheme(b.dataset.k, false); });
+  $('pkAna').addEventListener('click', (e) => {
+    const b = e.target.closest('.pk-sw'); if (!b) return;
+    const root = document.documentElement;
+    if (b.dataset.a === 'theme') cfg.anaColor = 'theme';
+    else { cfg.anaColor = 'apple'; cfg.anaAccent = b.dataset.a; }
+    root.classList.add('recolor'); applyAnaColor();
+    clearTimeout(recolorTimer); recolorTimer = setTimeout(() => root.classList.remove('recolor'), 650);
+    markPicked();
+  });
   $('pkDone').addEventListener('click', () => closePicker(true));
   $('pkCancel').addEventListener('click', () => closePicker(false));
   $('pickerBack').addEventListener('click', () => closePicker(true));
@@ -1143,13 +1210,21 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   $('nBright').addEventListener('input', nightPreview);
   $('nRed').addEventListener('input', nightPreview);
   $('scheme').addEventListener('change', () => { root.dataset.scheme = $('scheme').value; });
+  const previewAna = () => {
+    root.dataset.ana = $('anaColor').value;
+    const sw = ANA_SWATCHES.find((x) => x.id === $('anaAccent').value) || ANA_SWATCHES[0];
+    root.style.setProperty('--acc1', sw.p); root.style.setProperty('--acc2', sw.s);
+  };
+  $('anaColor').addEventListener('change', previewAna);
+  $('anaAccent').addEventListener('change', previewAna);
 
-  dlg.addEventListener('close', () => { applyScheme(); root.classList.remove('preview'); setNight(nightOn); tick(); });
+  dlg.addEventListener('close', () => { applyScheme(); applyAnaColor(); root.classList.remove('preview'); setNight(nightOn); tick(); });
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
     $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view; $('scheme').value = cfg.scheme;
     $('secMode').value = cfg.secMode; $('alarm').value = cfg.alarm;
+    $('anaColor').value = cfg.anaColor; $('anaAccent').value = cfg.anaAccent;
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -1166,7 +1241,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
       nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value, scheme: $('scheme').value,
-      secMode: $('secMode').value, alarm: $('alarm').value };
+      secMode: $('secMode').value, alarm: $('alarm').value, anaColor: $('anaColor').value, anaAccent: $('anaAccent').value };
+    applyAnaColor();
     if (ana) ana.slotKey = '';
     applyScheme();
     setFace(cfg.face, false); applyView();
@@ -1267,6 +1343,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   wake();
 
   applyScheme();
+  applyAnaColor();
   setFace(cfg.face, false);
   applyView();
   tick();
