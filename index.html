@@ -122,6 +122,52 @@ body {
 @keyframes blink { 50% { opacity: .25; } }
 .ss { font-size: calc(5.4 * var(--u)); line-height: 1; font-weight: 700; color: var(--amber); padding-bottom: calc(.6 * var(--u)); }
 
+/* ---------- clock styles: RETRO (the date/time above), ANALOG, LED, STACK ----------
+   The alternate styles fill the clock box and size themselves from it (.alt is its own size container). */
+.clock { position: relative; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.clock:not([data-face="retro"]) > .date, .clock:not([data-face="retro"]) > .time { display: none; }
+.alt { position: absolute; inset: 0; container-type: size; display: none; place-items: center; align-content: center; }
+.clock[data-face="analog"] .analog, .clock[data-face="led"] .led, .clock[data-face="stack"] .stack { display: grid; }
+.clock.swap > :is(.date, .time, .alt) { animation: faceIn .4s cubic-bezier(.2, .9, .3, 1); }
+@keyframes faceIn { from { opacity: 0; transform: translateY(4%) scale(.97); } }
+.facename {
+  position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); pointer-events: none;
+  font: 13px/1 var(--f-mono); letter-spacing: .2em; color: var(--dim); opacity: 0; transition: opacity .5s ease; white-space: nowrap;
+}
+.facename.show { opacity: 1; transition-duration: .1s; }
+
+.analog svg { height: min(90cqh, 90cqw); width: auto; aspect-ratio: 1; overflow: visible; }
+.analog .ring { fill: none; stroke: var(--line); stroke-width: 1.4; }
+.analog .tick { stroke: var(--dim); stroke-width: 1.2; }
+.analog .tick.big { stroke: var(--amber); stroke-width: 3.2; }
+.analog .num { fill: var(--yellow); font: 600 17px var(--f-digit); text-anchor: middle; dominant-baseline: central; }
+.analog .adate { fill: var(--green); font: 600 11px var(--f-digit); letter-spacing: .12em; text-anchor: middle; }
+.analog .hh, .analog .mh { stroke: var(--red); stroke-linecap: round; }
+.analog .hh { stroke-width: 7; }
+.analog .mh { stroke-width: 4.5; }
+.analog .sh { stroke: var(--green); stroke-width: 1.6; stroke-linecap: round; }
+.analog .hub { fill: var(--red); }
+.analog .hub2 { fill: var(--green); }
+
+.led { gap: 4cqh; }
+.led .ldate { font: 600 min(9cqh, 4.6cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
+.led .ldate .wd { font-family: var(--f-ko); font-size: .78em; letter-spacing: 0; }
+.led .row7 { display: flex; align-items: flex-end; gap: min(2.4cqh, 1.2cqw); }
+.led svg { height: min(54cqh, 25cqw); width: auto; overflow: visible; }
+.led svg.sec { height: min(22cqh, 10cqw); }
+.led .on { fill: var(--red); }
+.led .off { fill: var(--red); opacity: .07; }
+.led .sec .on { fill: var(--amber); }
+.led .sec .off { fill: var(--amber); }
+.led .dots7 circle { fill: var(--red); }
+
+.stack { gap: 1cqh; }
+.stack .sdate { font: 600 min(8cqh, 5cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
+.stack .sdate .wd { font-family: var(--f-ko); font-size: .78em; letter-spacing: 0; }
+.stack .big { font: 700 min(40cqh, 42cqw)/.8 var(--f-digit); font-variant-numeric: tabular-nums; letter-spacing: .02em; padding-top: .06em; }
+.stack .sh1 { color: var(--red); }
+.stack .sm1 { color: var(--amber); }
+
 .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: calc(1.4 * var(--u)); min-height: 0; }
 .cell { display: flex; align-items: center; gap: calc(1.6 * var(--u)); padding: 0 calc(1.8 * var(--u)); overflow: hidden; }
 .cell .body { flex: 1; min-width: 0; display: grid; gap: calc(.8 * var(--u)); }
@@ -263,7 +309,7 @@ dialog output { color: var(--amber); }
 :root.preview dialog::backdrop { background: transparent; }
 dialog h2 { font: 26px/1 var(--f-ko); color: var(--yellow); margin: 0 0 14px; }
 dialog label { display: grid; gap: 6px; font-size: 13px; letter-spacing: .06em; color: var(--green); margin-bottom: 14px; }
-dialog textarea, dialog input {
+dialog textarea, dialog input, dialog select {
   background: #000; color: var(--amber); border: 1px solid var(--dim); padding: 10px;
   font: 16px/1.5 var(--f-mono); width: 100%;
 }
@@ -280,6 +326,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 .btns button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
+  .clock.swap > * { animation: none; }
   .stripes, .hm .colon { animation: none; }
   .bar i { transition: none; }
 }
@@ -297,12 +344,23 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   </aside>
 
   <section class="main">
-    <div class="clock">
+    <div class="clock" id="clock" data-face="retro" title="탭: 시계 스타일 바꾸기">
       <div class="date" id="date">----/--/--<span class="wd">(-)</span></div>
       <div class="time">
         <span class="hm" id="hm">--<span class="colon">:</span>--</span>
         <span class="ss" id="ss">:--</span>
       </div>
+      <div class="alt analog"><svg viewBox="0 0 200 200" role="img" aria-label="아날로그 시계"><circle class="ring" cx="100" cy="100" r="99"/><line class="tick big" x1="100.0" y1="14.0" x2="100.0" y2="4.0"/><line class="tick" x1="109.4" y1="10.5" x2="110.0" y2="4.5"/><line class="tick" x1="118.7" y1="12.0" x2="120.0" y2="6.1"/><line class="tick" x1="127.8" y1="14.4" x2="129.7" y2="8.7"/><line class="tick" x1="136.6" y1="17.8" x2="139.0" y2="12.3"/><line class="tick big" x1="143.0" y1="25.5" x2="148.0" y2="16.9"/><line class="tick" x1="152.9" y1="27.2" x2="156.4" y2="22.3"/><line class="tick" x1="160.2" y1="33.1" x2="164.2" y2="28.7"/><line class="tick" x1="166.9" y1="39.8" x2="171.3" y2="35.8"/><line class="tick" x1="172.8" y1="47.1" x2="177.7" y2="43.6"/><line class="tick big" x1="174.5" y1="57.0" x2="183.1" y2="52.0"/><line class="tick" x1="182.2" y1="63.4" x2="187.7" y2="61.0"/><line class="tick" x1="185.6" y1="72.2" x2="191.3" y2="70.3"/><line class="tick" x1="188.0" y1="81.3" x2="193.9" y2="80.0"/><line class="tick" x1="189.5" y1="90.6" x2="195.5" y2="90.0"/><line class="tick big" x1="186.0" y1="100.0" x2="196.0" y2="100.0"/><line class="tick" x1="189.5" y1="109.4" x2="195.5" y2="110.0"/><line class="tick" x1="188.0" y1="118.7" x2="193.9" y2="120.0"/><line class="tick" x1="185.6" y1="127.8" x2="191.3" y2="129.7"/><line class="tick" x1="182.2" y1="136.6" x2="187.7" y2="139.0"/><line class="tick big" x1="174.5" y1="143.0" x2="183.1" y2="148.0"/><line class="tick" x1="172.8" y1="152.9" x2="177.7" y2="156.4"/><line class="tick" x1="166.9" y1="160.2" x2="171.3" y2="164.2"/><line class="tick" x1="160.2" y1="166.9" x2="164.2" y2="171.3"/><line class="tick" x1="152.9" y1="172.8" x2="156.4" y2="177.7"/><line class="tick big" x1="143.0" y1="174.5" x2="148.0" y2="183.1"/><line class="tick" x1="136.6" y1="182.2" x2="139.0" y2="187.7"/><line class="tick" x1="127.8" y1="185.6" x2="129.7" y2="191.3"/><line class="tick" x1="118.7" y1="188.0" x2="120.0" y2="193.9"/><line class="tick" x1="109.4" y1="189.5" x2="110.0" y2="195.5"/><line class="tick big" x1="100.0" y1="186.0" x2="100.0" y2="196.0"/><line class="tick" x1="90.6" y1="189.5" x2="90.0" y2="195.5"/><line class="tick" x1="81.3" y1="188.0" x2="80.0" y2="193.9"/><line class="tick" x1="72.2" y1="185.6" x2="70.3" y2="191.3"/><line class="tick" x1="63.4" y1="182.2" x2="61.0" y2="187.7"/><line class="tick big" x1="57.0" y1="174.5" x2="52.0" y2="183.1"/><line class="tick" x1="47.1" y1="172.8" x2="43.6" y2="177.7"/><line class="tick" x1="39.8" y1="166.9" x2="35.8" y2="171.3"/><line class="tick" x1="33.1" y1="160.2" x2="28.7" y2="164.2"/><line class="tick" x1="27.2" y1="152.9" x2="22.3" y2="156.4"/><line class="tick big" x1="25.5" y1="143.0" x2="16.9" y2="148.0"/><line class="tick" x1="17.8" y1="136.6" x2="12.3" y2="139.0"/><line class="tick" x1="14.4" y1="127.8" x2="8.7" y2="129.7"/><line class="tick" x1="12.0" y1="118.7" x2="6.1" y2="120.0"/><line class="tick" x1="10.5" y1="109.4" x2="4.5" y2="110.0"/><line class="tick big" x1="14.0" y1="100.0" x2="4.0" y2="100.0"/><line class="tick" x1="10.5" y1="90.6" x2="4.5" y2="90.0"/><line class="tick" x1="12.0" y1="81.3" x2="6.1" y2="80.0"/><line class="tick" x1="14.4" y1="72.2" x2="8.7" y2="70.3"/><line class="tick" x1="17.8" y1="63.4" x2="12.3" y2="61.0"/><line class="tick big" x1="25.5" y1="57.0" x2="16.9" y2="52.0"/><line class="tick" x1="27.2" y1="47.1" x2="22.3" y2="43.6"/><line class="tick" x1="33.1" y1="39.8" x2="28.7" y2="35.8"/><line class="tick" x1="39.8" y1="33.1" x2="35.8" y2="28.7"/><line class="tick" x1="47.1" y1="27.2" x2="43.6" y2="22.3"/><line class="tick big" x1="57.0" y1="25.5" x2="52.0" y2="16.9"/><line class="tick" x1="63.4" y1="17.8" x2="61.0" y2="12.3"/><line class="tick" x1="72.2" y1="14.4" x2="70.3" y2="8.7"/><line class="tick" x1="81.3" y1="12.0" x2="80.0" y2="6.1"/><line class="tick" x1="90.6" y1="10.5" x2="90.0" y2="4.5"/><text class="num" x="100.0" y="27.0">12</text><text class="num" x="173.0" y="100.0">3</text><text class="num" x="100.0" y="173.0">6</text><text class="num" x="27.0" y="100.0">9</text><text class="adate" id="aDate" x="100" y="136"></text><line class="hh" id="aH" x1="100" y1="112" x2="100" y2="52"/><line class="mh" id="aM" x1="100" y1="116" x2="100" y2="24"/><circle class="hub" cx="100" cy="100" r="6"/><line class="sh" id="aS" x1="100" y1="122" x2="100" y2="14"/><circle class="hub2" cx="100" cy="100" r="2.6"/></svg></div>
+      <div class="alt led">
+        <div class="ldate" id="lDate"></div>
+        <div class="row7" id="led7"></div>
+      </div>
+      <div class="alt stack">
+        <div class="sdate" id="sDate"></div>
+        <div class="big sh1" id="sH">--</div>
+        <div class="big sm1" id="sM">--</div>
+      </div>
+      <div class="facename" id="faceName" aria-live="polite"></div>
     </div>
 
     <div class="row">
@@ -349,6 +407,15 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       <label for="lon">경도 LON<input id="lon" inputmode="decimal"></label>
     </div>
     <p class="hint">외부 기온: Open-Meteo 현재 기온(temperature_2m), 15분마다 갱신. 기본값은 서울. claude.ai 미리보기 안에서는 외부 접속이 막혀 표시되지 않습니다.</p>
+    <label for="face">시계 스타일 CLOCK STYLE
+      <select id="face">
+        <option value="retro">RETRO — 큰 디지털</option>
+        <option value="analog">ANALOG — 바늘 시계</option>
+        <option value="led">LED — 7세그먼트</option>
+        <option value="stack">STACK — 시·분 위아래</option>
+      </select>
+    </label>
+    <p class="hint">시계를 탭하거나 위아래로 밀어도 바뀝니다.</p>
     <fieldset class="night-set">
       <legend>야간 모드 NIGHT</legend>
       <label class="check" for="nAuto"><input type="checkbox" id="nAuto"> 시간 예약 사용</label>
@@ -440,7 +507,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   const DEFAULT_DD = '2027-01-01 새해';
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, ...NIGHT_DEFAULTS };
+  const FACES = ['retro', 'analog', 'led', 'stack'];
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', ...NIGHT_DEFAULTS };
 
   const $ = (id) => document.getElementById(id);
   let cfg = load();
@@ -508,6 +576,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     $('date').innerHTML = `${p.year}/${p.month}/${p.day}<span class="wd">(${WD[p.weekday] || p.weekday})</span>`;
     $('hm').innerHTML = `${p.hour}<span class="colon">:</span>${p.minute}`;
     $('ss').textContent = ':' + p.second;
+    drawFaces(p);
 
     // ----- period -----
     const t = +p.hour * 60 + +p.minute + +p.second / 60; // minutes since KST midnight
@@ -596,6 +665,70 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (!document.hidden && (!wx.ok || Date.now() - wx.okAt > 15 * 60000)) wx.next = 0;
   });
 
+  // ----- clock styles -----
+  // 7-segment digit: segments a-g as hexagonal bars in a 60x104 box, slanted like an LED clock.
+  const H = (y, x1, x2) => `${x1},${y} ${x1 + 6},${y - 6} ${x2 - 6},${y - 6} ${x2},${y} ${x2 - 6},${y + 6} ${x1 + 6},${y + 6}`;
+  const V = (x, y1, y2) => `${x},${y1} ${x + 6},${y1 + 6} ${x + 6},${y2 - 6} ${x},${y2} ${x - 6},${y2 - 6} ${x - 6},${y1 + 6}`;
+  const SEG = { a: H(8, 10, 50), b: V(54, 11, 51), c: V(54, 55, 95), d: H(98, 10, 50), e: V(6, 55, 95), f: V(6, 11, 51), g: H(53, 10, 50) };
+  const DIG = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
+  const digitSvg = (cls) => `<svg viewBox="-2 0 64 106" class="${cls}"><g transform="skewX(-6) translate(6 0)">` +
+    Object.entries(SEG).map(([k, pts]) => `<polygon data-s="${k}" class="off" points="${pts}"/>`).join('') + '</g></svg>';
+  $('led7').innerHTML = digitSvg('d') + digitSvg('d') +
+    '<svg viewBox="0 0 20 106" class="dots7"><circle cx="10" cy="34" r="6"/><circle cx="7" cy="74" r="6"/></svg>' +
+    digitSvg('d') + digitSvg('d') + digitSvg('sec') + digitSvg('sec');
+  const ledDigits = [...$('led7').querySelectorAll('svg.d, svg.sec')];
+  function setDigit(svg, n) {
+    const on = DIG[n] || '';
+    for (const poly of svg.querySelectorAll('polygon')) poly.setAttribute('class', on.includes(poly.dataset.s) ? 'on' : 'off');
+  }
+  const dateHtml = (p) => `${p.year}/${p.month}/${p.day}<span class="wd">(${WD[p.weekday] || p.weekday})</span>`;
+  function drawFaces(p) {
+    const face = $('clock').dataset.face;
+    const h = +p.hour, m = +p.minute, sec = +p.second;
+    if (face === 'analog') {
+      $('aH').setAttribute('transform', `rotate(${(h % 12) * 30 + m * 0.5 + sec / 120} 100 100)`);
+      $('aM').setAttribute('transform', `rotate(${m * 6 + sec * 0.1} 100 100)`);
+      $('aS').setAttribute('transform', `rotate(${sec * 6} 100 100)`);
+      $('aDate').textContent = `${p.month}/${p.day} ${WD[p.weekday] || ''}`;
+    } else if (face === 'led') {
+      (p.hour + p.minute + p.second).split('').forEach((c, i) => setDigit(ledDigits[i], +c));
+      $('lDate').innerHTML = dateHtml(p);
+    } else if (face === 'stack') {
+      $('sH').textContent = p.hour; $('sM').textContent = p.minute;
+      $('sDate').innerHTML = dateHtml(p);
+    }
+  }
+  let faceTimer = 0;
+  function setFace(name, announce) {
+    const clock = $('clock');
+    clock.dataset.face = FACES.includes(name) ? name : 'retro';
+    drawFaces(kstNow());
+    if (!announce) return;
+    clock.classList.remove('swap'); void clock.offsetWidth; clock.classList.add('swap');
+    const fn = $('faceName');
+    fn.textContent = `${clock.dataset.face.toUpperCase()} · ${FACES.indexOf(clock.dataset.face) + 1}/${FACES.length}`;
+    fn.classList.add('show');
+    clearTimeout(faceTimer);
+    faceTimer = setTimeout(() => { fn.classList.remove('show'); clock.classList.remove('swap'); }, 1300);
+  }
+  function stepFace(d) {
+    const i = FACES.indexOf($('clock').dataset.face);
+    cfg.face = FACES[(i + d + FACES.length) % FACES.length];
+    store(); setFace(cfg.face, true);
+  }
+  {
+    let y0 = null;
+    const clock = $('clock');
+    clock.addEventListener('pointerdown', (e) => { y0 = e.clientY; });
+    clock.addEventListener('pointerup', (e) => {
+      if (y0 === null) return;
+      const dy = e.clientY - y0; y0 = null;
+      if (Math.abs(dy) > 30) stepFace(dy < 0 ? 1 : -1);  // swipe up: next, down: previous
+      else if (Math.abs(dy) < 8) stepFace(1);             // tap: next
+    });
+    clock.addEventListener('pointercancel', () => { y0 = null; });
+  }
+
   // ----- night mode -----
   const root = document.documentElement;
   const toMin = (hm) => { const [h, m] = String(hm || '0:0').split(':'); return +h * 60 + +m; };
@@ -640,7 +773,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
-    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed;
+    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face;
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -656,7 +789,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const moved = lat !== cfg.lat || lon !== cfg.lon;
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
-      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value };
+      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value };
+    setFace(cfg.face, false);
     lastAuto = null; nightOverride = null;
     allEntries = e; ddays = d; store();
     if (moved) wx.next = 0;
@@ -753,6 +887,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
   wake();
 
+  setFace(cfg.face, false);
   tick();
   setTimeout(function loop() { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); }, 1000 - (Date.now() % 1000) + 5);
 })();
