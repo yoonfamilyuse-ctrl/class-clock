@@ -121,6 +121,8 @@ body {
 .ext .tag .en { font-size: calc(2 * var(--u)); }
 .temp { font: 600 calc(10 * var(--u))/1 var(--f-digit); color: var(--green); font-variant-numeric: tabular-nums; padding-top: var(--u); padding-right: calc(3 * var(--u)); white-space: nowrap; }
 .temp.stale { color: var(--dim); }
+.tag .wxn { color: var(--dim); font-family: var(--f-mono); font-weight: 400; letter-spacing: .04em; font-size: .8em; }
+.tag .wxn.bad { color: var(--red); }
 
 /* ---------- portrait: phone and iPad upright ---------- */
 @media (max-aspect-ratio: 1/1) {
@@ -184,9 +186,10 @@ body {
     cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none;
   }
   .w.on { opacity: 1; pointer-events: auto; }
-  .w .tag { grid-auto-flow: column; align-items: baseline; gap: 2cqh; }
+  .w .tag { grid-auto-flow: column; grid-auto-columns: max-content; justify-content: start; align-items: baseline; gap: 2cqh; }
   .w .tag .ko { font-size: 8cqh; }
   .w .tag .en { font-size: 4.4cqh; margin: 0; }
+  .w .tag .wxn { grid-row: 2; grid-column: 1 / span 2; margin-top: 1.4cqh; font-size: 4cqh; }
   .w .body { width: 100%; gap: 3cqh; flex: none; }
   .w .val { font-size: 17cqh; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: .95; }
   .w .bar { height: 3.4cqh; border-width: 2px; }
@@ -281,7 +284,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     </div>
 
     <div class="box cell ext w" id="wExt">
-      <div class="tag"><span class="ko">외부</span><span class="en">EXTERNAL</span></div>
+      <div class="tag"><span class="ko">외부</span><span class="en">EXTERNAL</span><span class="en wxn" id="wxNote">CONNECTING</span></div>
       <div class="temp stale" id="temp">--.-°C</div>
       <div class="hazard r" aria-hidden="true"></div>
     </div>
@@ -385,7 +388,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   let cfg = load();
   let allEntries = parse(cfg.sched).entries;
   let ddays = parseDD(cfg.dd).list;
-  let wx = { ok: false, at: 0 };
+  // ok: last request succeeded; next: when to try again; fails: consecutive failures (sets the retry delay)
+  let wx = { ok: false, okAt: 0, next: 0, fails: 0, busy: false, err: '' };
 
   function load() {
     try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; }
@@ -489,30 +493,49 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     }
     $('ddCount').textContent = up.length;
 
-    // ----- weather, every 15 minutes -----
-    if (Date.now() - wx.at > 15 * 60 * 1000) fetchWx();
-    const age = wx.ok ? Math.round((Date.now() - wx.okAt) / 60000) : null;
-    $('meta').innerHTML = `KST · UTC+9<br>WX LINK<br>${wx.ok ? 'OK · ' + age + 'M AGO' : 'OFFLINE'}`;
+    // ----- weather: every 15 min when working; after a failure retry at 1, 2, 4, 8, 15 min -----
+    if (Date.now() >= wx.next) fetchWx();
+    const age = wx.okAt ? Math.round((Date.now() - wx.okAt) / 60000) : null;
+    const wait = Math.max(0, Math.ceil((wx.next - Date.now()) / 1000));
+    const note = wx.ok ? `OPEN-METEO · ${age}M AGO`
+      : wx.busy ? 'CONNECTING'
+      : `${wx.err} · RETRY ${wait >= 60 ? Math.ceil(wait / 60) + 'M' : wait + 'S'}`;
+    $('wxNote').textContent = note;
+    $('wxNote').classList.toggle('bad', !wx.ok && !wx.busy);
+    $('meta').innerHTML = `KST · UTC+9<br>WX LINK<br>${wx.ok ? 'OK · ' + age + 'M AGO' : wx.busy ? 'CONNECTING' : 'OFFLINE · ' + wx.err}`;
     $('sync').classList.toggle('off', !wx.ok);
   }
 
   async function fetchWx() {
-    wx.at = Date.now();
+    if (wx.busy) return;
+    wx.busy = true; wx.next = Date.now() + 60000;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${cfg.lat}&longitude=${cfg.lon}&current=temperature_2m&timezone=Asia%2FSeoul`;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
     try {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(r.status);
+      const r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+      if (!r.ok) throw Object.assign(new Error(), { code: 'HTTP ' + r.status });
       const j = await r.json();
       const v = j?.current?.temperature_2m;
-      if (typeof v !== 'number') throw new Error('no data');
+      if (typeof v !== 'number') throw Object.assign(new Error(), { code: 'NO DATA' });
       $('temp').textContent = v.toFixed(1) + '°C';
       $('temp').classList.remove('stale');
-      wx.ok = true; wx.okAt = Date.now();
-    } catch {
-      wx.ok = false;
-      $('temp').classList.add('stale');
+      wx.ok = true; wx.okAt = Date.now(); wx.fails = 0; wx.err = '';
+      wx.next = Date.now() + 15 * 60000;
+    } catch (e) {
+      wx.ok = false; wx.fails++;
+      wx.err = e.code || (e.name === 'AbortError' ? 'TIMEOUT' : navigator.onLine === false ? 'NO INTERNET' : 'NET BLOCKED');
+      $('temp').classList.add('stale');  // keeps the last reading, dimmed
+      wx.next = Date.now() + Math.min(15, 2 ** (wx.fails - 1)) * 60000;
+    } finally {
+      clearTimeout(timer); wx.busy = false;
     }
   }
+  // Try again right away when the connection comes back or the screen wakes up.
+  addEventListener('online', () => { if (!wx.ok) wx.next = 0; });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && (!wx.ok || Date.now() - wx.okAt > 15 * 60000)) wx.next = 0;
+  });
 
   // ----- settings -----
   const dlg = $('dlg');
@@ -532,7 +555,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const moved = lat !== cfg.lat || lon !== cfg.lon;
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon };
     allEntries = e; ddays = d; store();
-    if (moved) wx.at = 0;
+    if (moved) wx.next = 0;
     dlg.close(); tick();
   });
   $('fs').addEventListener('click', async () => {
