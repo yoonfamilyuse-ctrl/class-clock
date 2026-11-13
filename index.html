@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0907">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Black+Han+Sans&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Fredoka:wght@600;700&family=Black+Han+Sans&family=Share+Tech+Mono&display=swap">
 <style>
 /* Layout: CRT-style bezel that fills the screen. Landscape (MacBook, iPad/phone sideways): left rail + right stack.
    Portrait (phone, iPad upright): one column. All sizes scale from --u, a unit tied to the frame's own width and height. */
@@ -29,6 +29,7 @@
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
   --f-ko: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --f-round: ui-rounded, "SF Pro Rounded", "Fredoka", "Arial Rounded MT Bold", sans-serif;
   --f-mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 /* Night mode: every color token slides toward one red, so nothing on screen emits white, green or blue light. */
@@ -136,18 +137,17 @@ body {
 }
 .facename.show { opacity: 1; transition-duration: .1s; }
 
-.analog svg { height: min(90cqh, 90cqw); width: auto; aspect-ratio: 1; overflow: visible; }
-.analog .ring { fill: none; stroke: var(--line); stroke-width: 1.4; }
-.analog .tick { stroke: var(--dim); stroke-width: 1.2; }
-.analog .tick.big { stroke: var(--amber); stroke-width: 3.2; }
-.analog .num { fill: var(--yellow); font: 600 17px var(--f-digit); text-anchor: middle; dominant-baseline: central; }
-.analog .adate { fill: var(--green); font: 600 11px var(--f-digit); letter-spacing: .12em; text-anchor: middle; }
+.analog { padding: 2.5cqmin; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
+.analog svg { width: 100%; height: 100%; overflow: visible; }
+.analog .rim { fill: none; stroke: var(--line); stroke-width: 1.2; opacity: .55; }
+.analog .tick { stroke: var(--dim); stroke-linecap: round; }
+.analog .num { fill: var(--amber); font-family: var(--f-round); font-weight: 700; text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.analog .num.q { fill: var(--yellow); }
+.analog .adate { fill: var(--green); font-family: var(--f-digit); font-weight: 600; letter-spacing: .12em; text-anchor: middle; dominant-baseline: central; }
 .analog .hh, .analog .mh { stroke: var(--red); stroke-linecap: round; }
-.analog .hh { stroke-width: 7; }
-.analog .mh { stroke-width: 4.5; }
-.analog .sh { stroke: var(--green); stroke-width: 1.6; stroke-linecap: round; }
+.analog .sh { stroke: var(--green); stroke-linecap: round; }
 .analog .hub { fill: var(--red); }
-.analog .hub2 { fill: var(--green); }
+.analog .hub2 { fill: var(--bg); stroke: var(--green); }
 
 .led { gap: 4cqh; }
 .led .ldate { font: 600 min(9cqh, 4.6cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
@@ -161,12 +161,19 @@ body {
 .led .sec .off { fill: var(--amber); }
 .led .dots7 circle { fill: var(--red); }
 
-.stack { gap: 1cqh; }
-.stack .sdate { font: 600 min(8cqh, 5cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
+.stack { align-content: center; gap: 0; }
+.stack .sdate { font: 600 min(7.5cqh, 5cqw)/1 var(--f-digit); color: var(--green); letter-spacing: .14em; margin-bottom: 1.5cqh; }
 .stack .sdate .wd { font-family: var(--f-ko); font-size: .78em; letter-spacing: 0; }
-.stack .big { font: 700 min(40cqh, 42cqw)/.8 var(--f-digit); font-variant-numeric: tabular-nums; letter-spacing: .02em; padding-top: .06em; }
-.stack .sh1 { color: var(--red); }
+.stack .big {
+  display: flex; justify-content: center;
+  font: 800 min(52cqh, 68cqw)/.8 var(--f-round); letter-spacing: -.02em;
+}
+.stack .big + .big { margin-top: -.06em; }           /* lines overlap a little, like stacked stickers */
+.stack .dg { display: inline-block; width: .6em; text-align: center; }
+.stack .sh1 { color: var(--red); position: relative; z-index: 1; }
 .stack .sm1 { color: var(--amber); }
+.stack .dg.pop { animation: digitPop .7s cubic-bezier(.2, 1.5, .35, 1); }
+@keyframes digitPop { 0% { transform: translateY(28%) scale(.55); opacity: 0; } 60% { opacity: 1; } }
 
 .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: calc(1.4 * var(--u)); min-height: 0; }
 .cell { display: flex; align-items: center; gap: calc(1.6 * var(--u)); padding: 0 calc(1.8 * var(--u)); overflow: hidden; }
@@ -250,6 +257,7 @@ body {
   .main { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 3cqw; position: relative; padding-right: 3.2cqw; }
   .row { display: contents; }
   .clock { grid-area: 1 / 1; border: 0; align-content: center; gap: 2cqh; }
+  .clock .analog { top: 11cqh; }   /* clear the SYNC / NIGHT chips */
   .date { font-size: min(10cqh, 4.6cqw); }
   .time { flex-direction: column; align-items: center; gap: 0; }
   .hm { font-size: min(62cqh, 20cqw); line-height: .8; text-shadow: 0 0 4cqh rgba(255,75,43,.45); }
@@ -327,6 +335,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
 
 @media (prefers-reduced-motion: reduce) {
   .clock.swap > * { animation: none; }
+  .stack .dg.pop { animation: none; }
   .stripes, .hm .colon { animation: none; }
   .bar i { transition: none; }
 }
@@ -350,15 +359,15 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
         <span class="hm" id="hm">--<span class="colon">:</span>--</span>
         <span class="ss" id="ss">:--</span>
       </div>
-      <div class="alt analog"><svg viewBox="0 0 200 200" role="img" aria-label="아날로그 시계"><circle class="ring" cx="100" cy="100" r="99"/><line class="tick big" x1="100.0" y1="14.0" x2="100.0" y2="4.0"/><line class="tick" x1="109.4" y1="10.5" x2="110.0" y2="4.5"/><line class="tick" x1="118.7" y1="12.0" x2="120.0" y2="6.1"/><line class="tick" x1="127.8" y1="14.4" x2="129.7" y2="8.7"/><line class="tick" x1="136.6" y1="17.8" x2="139.0" y2="12.3"/><line class="tick big" x1="143.0" y1="25.5" x2="148.0" y2="16.9"/><line class="tick" x1="152.9" y1="27.2" x2="156.4" y2="22.3"/><line class="tick" x1="160.2" y1="33.1" x2="164.2" y2="28.7"/><line class="tick" x1="166.9" y1="39.8" x2="171.3" y2="35.8"/><line class="tick" x1="172.8" y1="47.1" x2="177.7" y2="43.6"/><line class="tick big" x1="174.5" y1="57.0" x2="183.1" y2="52.0"/><line class="tick" x1="182.2" y1="63.4" x2="187.7" y2="61.0"/><line class="tick" x1="185.6" y1="72.2" x2="191.3" y2="70.3"/><line class="tick" x1="188.0" y1="81.3" x2="193.9" y2="80.0"/><line class="tick" x1="189.5" y1="90.6" x2="195.5" y2="90.0"/><line class="tick big" x1="186.0" y1="100.0" x2="196.0" y2="100.0"/><line class="tick" x1="189.5" y1="109.4" x2="195.5" y2="110.0"/><line class="tick" x1="188.0" y1="118.7" x2="193.9" y2="120.0"/><line class="tick" x1="185.6" y1="127.8" x2="191.3" y2="129.7"/><line class="tick" x1="182.2" y1="136.6" x2="187.7" y2="139.0"/><line class="tick big" x1="174.5" y1="143.0" x2="183.1" y2="148.0"/><line class="tick" x1="172.8" y1="152.9" x2="177.7" y2="156.4"/><line class="tick" x1="166.9" y1="160.2" x2="171.3" y2="164.2"/><line class="tick" x1="160.2" y1="166.9" x2="164.2" y2="171.3"/><line class="tick" x1="152.9" y1="172.8" x2="156.4" y2="177.7"/><line class="tick big" x1="143.0" y1="174.5" x2="148.0" y2="183.1"/><line class="tick" x1="136.6" y1="182.2" x2="139.0" y2="187.7"/><line class="tick" x1="127.8" y1="185.6" x2="129.7" y2="191.3"/><line class="tick" x1="118.7" y1="188.0" x2="120.0" y2="193.9"/><line class="tick" x1="109.4" y1="189.5" x2="110.0" y2="195.5"/><line class="tick big" x1="100.0" y1="186.0" x2="100.0" y2="196.0"/><line class="tick" x1="90.6" y1="189.5" x2="90.0" y2="195.5"/><line class="tick" x1="81.3" y1="188.0" x2="80.0" y2="193.9"/><line class="tick" x1="72.2" y1="185.6" x2="70.3" y2="191.3"/><line class="tick" x1="63.4" y1="182.2" x2="61.0" y2="187.7"/><line class="tick big" x1="57.0" y1="174.5" x2="52.0" y2="183.1"/><line class="tick" x1="47.1" y1="172.8" x2="43.6" y2="177.7"/><line class="tick" x1="39.8" y1="166.9" x2="35.8" y2="171.3"/><line class="tick" x1="33.1" y1="160.2" x2="28.7" y2="164.2"/><line class="tick" x1="27.2" y1="152.9" x2="22.3" y2="156.4"/><line class="tick big" x1="25.5" y1="143.0" x2="16.9" y2="148.0"/><line class="tick" x1="17.8" y1="136.6" x2="12.3" y2="139.0"/><line class="tick" x1="14.4" y1="127.8" x2="8.7" y2="129.7"/><line class="tick" x1="12.0" y1="118.7" x2="6.1" y2="120.0"/><line class="tick" x1="10.5" y1="109.4" x2="4.5" y2="110.0"/><line class="tick big" x1="14.0" y1="100.0" x2="4.0" y2="100.0"/><line class="tick" x1="10.5" y1="90.6" x2="4.5" y2="90.0"/><line class="tick" x1="12.0" y1="81.3" x2="6.1" y2="80.0"/><line class="tick" x1="14.4" y1="72.2" x2="8.7" y2="70.3"/><line class="tick" x1="17.8" y1="63.4" x2="12.3" y2="61.0"/><line class="tick big" x1="25.5" y1="57.0" x2="16.9" y2="52.0"/><line class="tick" x1="27.2" y1="47.1" x2="22.3" y2="43.6"/><line class="tick" x1="33.1" y1="39.8" x2="28.7" y2="35.8"/><line class="tick" x1="39.8" y1="33.1" x2="35.8" y2="28.7"/><line class="tick" x1="47.1" y1="27.2" x2="43.6" y2="22.3"/><line class="tick big" x1="57.0" y1="25.5" x2="52.0" y2="16.9"/><line class="tick" x1="63.4" y1="17.8" x2="61.0" y2="12.3"/><line class="tick" x1="72.2" y1="14.4" x2="70.3" y2="8.7"/><line class="tick" x1="81.3" y1="12.0" x2="80.0" y2="6.1"/><line class="tick" x1="90.6" y1="10.5" x2="90.0" y2="4.5"/><text class="num" x="100.0" y="27.0">12</text><text class="num" x="173.0" y="100.0">3</text><text class="num" x="100.0" y="173.0">6</text><text class="num" x="27.0" y="100.0">9</text><text class="adate" id="aDate" x="100" y="136"></text><line class="hh" id="aH" x1="100" y1="112" x2="100" y2="52"/><line class="mh" id="aM" x1="100" y1="116" x2="100" y2="24"/><circle class="hub" cx="100" cy="100" r="6"/><line class="sh" id="aS" x1="100" y1="122" x2="100" y2="14"/><circle class="hub2" cx="100" cy="100" r="2.6"/></svg></div>
+      <div class="alt analog" id="analog"><svg id="anaSvg" role="img" aria-label="아날로그 시계"></svg></div>
       <div class="alt led">
         <div class="ldate" id="lDate"></div>
         <div class="row7" id="led7"></div>
       </div>
       <div class="alt stack">
         <div class="sdate" id="sDate"></div>
-        <div class="big sh1" id="sH">--</div>
-        <div class="big sm1" id="sM">--</div>
+        <div class="big sh1" id="sH"><span class="dg">-</span><span class="dg">-</span></div>
+        <div class="big sm1" id="sM"><span class="dg">-</span><span class="dg">-</span></div>
       </div>
       <div class="facename" id="faceName" aria-live="polite"></div>
     </div>
@@ -681,20 +690,76 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const on = DIG[n] || '';
     for (const poly of svg.querySelectorAll('polygon')) poly.setAttribute('class', on.includes(poly.dataset.s) ? 'on' : 'off');
   }
+  // Analog dial that fills the clock's rectangle: ticks and numerals sit on a squircle
+  // (|x/a|^n + |y/b|^n = 1) fitted to the box, so the dial follows the box's shape.
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  let ana = null;  // { cx, cy } of the current build
+  function onSquircle(deg, a, b, n = 7) {
+    const t = deg * Math.PI / 180, sx = Math.sin(t), sy = -Math.cos(t);
+    const r = Math.pow(Math.pow(Math.abs(sx / a), n) + Math.pow(Math.abs(sy / b), n), -1 / n);
+    return [sx * r, sy * r];
+  }
+  function buildAnalog() {
+    const box = $('analog'), svg = $('anaSvg');
+    const W = svg.clientWidth, H = svg.clientHeight;
+    if (!W || !H) return;
+    if (ana && ana.W === W && ana.H === H) return;
+    const cx = W / 2, cy = H / 2, m = Math.min(W, H);
+    // Dial fills the box, but never wider than ~2.1:1 or taller than 1:1.6 (very long dials bunch the numerals).
+    const DW = Math.min(W, H * 2.1), DH = Math.min(H, W * 1.6);
+    const a = DW / 2, b = DH / 2;                   // outer edge
+    const tickL = m * 0.035, tickW = Math.max(1, m * 0.006);
+    const fs = m * 0.13;                            // numeral size
+    let html = `<rect class="rim" x="${cx - a + 0.6}" y="${cy - b + 0.6}" width="${DW - 1.2}" height="${DH - 1.2}" rx="${m * 0.12}"/>`;
+    for (let i = 0; i < 60; i++) {
+      if (i % 5 === 0) continue;                    // numerals stand in for hour ticks
+      const [x1, y1] = onSquircle(i * 6, a - m * 0.012, b - m * 0.012);
+      const [x2, y2] = onSquircle(i * 6, a - m * 0.012 - tickL, b - m * 0.012 - tickL);
+      html += `<line class="tick" stroke-width="${tickW}" x1="${(cx + x1).toFixed(1)}" y1="${(cy + y1).toFixed(1)}" x2="${(cx + x2).toFixed(1)}" y2="${(cy + y2).toFixed(1)}"/>`;
+    }
+    const inset = m * 0.012 + fs * 0.62;
+    for (let h = 1; h <= 12; h++) {
+      const [x, y] = onSquircle(h * 30, a - inset, b - inset, 5);
+      html += `<text class="num${h % 3 === 0 ? ' q' : ''}" font-size="${fs.toFixed(1)}" x="${(cx + x).toFixed(1)}" y="${(cy + y).toFixed(1)}">${h}</text>`;
+    }
+    const R = Math.min(a, b) - inset - fs * 0.55;   // longest hand stays inside the numerals
+    html += `<text class="adate" id="aDate" font-size="${(m * 0.06).toFixed(1)}" x="${cx}" y="${(cy + R * 0.48).toFixed(1)}"></text>`;
+    html += `<line class="hh" id="aH" stroke-width="${(m * 0.032).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.12}" x2="${cx}" y2="${cy - R * 0.55}"/>`;
+    html += `<line class="mh" id="aM" stroke-width="${(m * 0.022).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.12}" x2="${cx}" y2="${cy - R * 0.96}"/>`;
+    html += `<circle class="hub" cx="${cx}" cy="${cy}" r="${(m * 0.026).toFixed(1)}"/>`;
+    html += `<line class="sh" id="aS" stroke-width="${Math.max(1, m * 0.007).toFixed(1)}" x1="${cx}" y1="${cy + R * 0.2}" x2="${cx}" y2="${cy - R * 1.02}"/>`;
+    html += `<circle class="hub2" stroke-width="${(m * 0.006).toFixed(1)}" cx="${cx}" cy="${cy}" r="${(m * 0.011).toFixed(1)}"/>`;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = html;
+    ana = { W, H, cx, cy };
+  }
+  new ResizeObserver(() => { if ($('clock').dataset.face === 'analog') { buildAnalog(); drawFaces(kstNow()); } }).observe($('anaSvg'));
+
+  // STACK digits: each digit is its own span, and only the digit that changed pops in.
+  function setDigits(el, str) {
+    [...el.children].forEach((d, i) => {
+      if (d.textContent === str[i]) return;
+      d.textContent = str[i];
+      d.classList.remove('pop'); void d.offsetWidth; d.classList.add('pop');
+    });
+  }
   const dateHtml = (p) => `${p.year}/${p.month}/${p.day}<span class="wd">(${WD[p.weekday] || p.weekday})</span>`;
   function drawFaces(p) {
     const face = $('clock').dataset.face;
     const h = +p.hour, m = +p.minute, sec = +p.second;
     if (face === 'analog') {
-      $('aH').setAttribute('transform', `rotate(${(h % 12) * 30 + m * 0.5 + sec / 120} 100 100)`);
-      $('aM').setAttribute('transform', `rotate(${m * 6 + sec * 0.1} 100 100)`);
-      $('aS').setAttribute('transform', `rotate(${sec * 6} 100 100)`);
+      buildAnalog();
+      if (!ana) return;
+      const { cx, cy } = ana;
+      $('aH').setAttribute('transform', `rotate(${(h % 12) * 30 + m * 0.5 + sec / 120} ${cx} ${cy})`);
+      $('aM').setAttribute('transform', `rotate(${m * 6 + sec * 0.1} ${cx} ${cy})`);
+      $('aS').setAttribute('transform', `rotate(${sec * 6} ${cx} ${cy})`);
       $('aDate').textContent = `${p.month}/${p.day} ${WD[p.weekday] || ''}`;
     } else if (face === 'led') {
       (p.hour + p.minute + p.second).split('').forEach((c, i) => setDigit(ledDigits[i], +c));
       $('lDate').innerHTML = dateHtml(p);
     } else if (face === 'stack') {
-      $('sH').textContent = p.hour; $('sM').textContent = p.minute;
+      setDigits($('sH'), p.hour); setDigits($('sM'), p.minute);
       $('sDate').innerHTML = dateHtml(p);
     }
   }
