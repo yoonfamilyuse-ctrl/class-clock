@@ -22,8 +22,9 @@
   --red: var(--t-red); --green: var(--t-green); --amber: var(--t-amber); --yellow: var(--t-yellow);
   --line: var(--t-line); --dim: var(--t-dim); --ink: var(--t-ink);
   --glow: rgba(255,75,43,.35);
-  --a-fg: var(--red);     /* ANALOG: numerals, hands, ticks = theme primary */
-  --a-acc: var(--amber);  /* ANALOG: second hand, centre ring, alarm icon, weekday = theme accent */
+  /* ANALOG uses four theme colors: numerals + hour ticks = label color, hands = primary,
+     second hand + ring + alarm icon + weekday = accent, alarm time + date = info color */
+  --a-num: var(--yellow); --a-hand: var(--red); --a-acc: var(--amber); --a-info: var(--green);
   --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
@@ -31,9 +32,9 @@
   --f-round: ui-rounded, "SF Pro Rounded", "Fredoka", "Arial Rounded MT Bold", sans-serif;
   --f-mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
-:root[data-scheme="amber"] { --t-bg: #0a0700; --t-panel: #110c02; --t-card: #0e0a02; --t-red: #ffb000; --t-green: #ffcc66; --t-amber: #ff8c1a; --t-yellow: #ffd27a; --t-line: #8a5a12; --t-dim: #7a5a26; --t-ink: #1a1000; }
-:root[data-scheme="phosphor"] { --t-bg: #020a05; --t-panel: #04110a; --t-card: #031008; --t-red: #3dff7f; --t-green: #9dffb8; --t-amber: #1fcf5f; --t-yellow: #c8ffd4; --t-line: #1f7a45; --t-dim: #3c6a4c; --t-ink: #001a08; }
-:root[data-scheme="mono"] { --t-bg: #000000; --t-panel: #0a0a0b; --t-card: #111113; --t-red: #f5f5f7; --t-green: #a1a1a6; --t-amber: #ff9f0a; --t-yellow: #d1d1d6; --t-line: #3a3a3c; --t-dim: #6e6e73; --t-ink: #000000; }
+:root[data-scheme="tide"] { --t-bg: #050b10; --t-panel: #08121a; --t-card: #07101a; --t-red: #3ec5ff; --t-green: #7cf5c4; --t-amber: #ff8a5c; --t-yellow: #ffd166; --t-line: #2f6f8f; --t-dim: #5a7686; --t-ink: #021018; }
+:root[data-scheme="sunset"] { --t-bg: #0d0710; --t-panel: #150b18; --t-card: #120914; --t-red: #ff5c8a; --t-green: #8fd3ff; --t-amber: #ffa64d; --t-yellow: #ffe066; --t-line: #8a4a6a; --t-dim: #7a5c6c; --t-ink: #1a0610; }
+:root[data-scheme="meadow"] { --t-bg: #070a05; --t-panel: #0d1209; --t-card: #0b1007; --t-red: #a3e635; --t-green: #67e8f9; --t-amber: #fb923c; --t-yellow: #fde047; --t-line: #4d6b2f; --t-dim: #6b7a5a; --t-ink: #0d1400; }
 :root[data-scheme="neon"] { --t-bg: #07040d; --t-panel: #0d0817; --t-card: #0b0614; --t-red: #ff3fa4; --t-green: #3fe0ff; --t-amber: #ffd23f; --t-yellow: #b18cff; --t-line: #5b3a8c; --t-dim: #6a5a8a; --t-ink: #14001a; }
 /* Night mode: every color token slides toward one red, so nothing on screen emits white, green or blue light. */
 @supports (color: color-mix(in srgb, red, blue)) {
@@ -144,12 +145,12 @@ body {
 
 .analog { padding: 0; background: var(--bg); grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
 .analog svg { width: 100%; height: 100%; overflow: hidden; }
-.analog .tk { stroke: var(--a-fg); stroke-linecap: round; }
-.analog .num { fill: var(--a-fg); font-family: "Archivo", -apple-system, system-ui, sans-serif; font-stretch: 125%; font-weight: 650; text-anchor: middle; }
-.analog .slot { fill: var(--a-fg); fill-opacity: .9; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.analog .tk { stroke: var(--a-num); stroke-linecap: round; }
+.analog .num { fill: var(--a-num); font-family: "Archivo", -apple-system, system-ui, sans-serif; font-stretch: 125%; font-weight: 650; text-anchor: middle; }
+.analog .slot { fill: var(--a-info); fill-opacity: .9; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .analog .acc { fill: var(--a-acc); }
 .analog .accs { stroke: var(--a-acc); fill: none; stroke-linecap: round; }
-.analog .hand { stroke: var(--a-fg); stroke-linecap: round; }
+.analog .hand { stroke: var(--a-hand); stroke-linecap: round; }
 .analog .sec { stroke: var(--a-acc); stroke-linecap: round; }
 .analog .ring { fill: var(--bg); stroke: var(--a-acc); }
 .analog .dbg { stroke: #3bc8d4; stroke-width: 1; fill: none; opacity: .6; }
@@ -457,11 +458,11 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     <p class="hint">가로 화면(휴대폰·패드·컴퓨터)에서만 적용됩니다. CLOCK 버튼이나 시계를 좌우로 밀어서도 바꿀 수 있습니다.</p>
     <label for="scheme">색 테마 COLOR
       <select id="scheme">
-        <option value="signal">SIGNAL — 빨강·초록·주황 레트로</option>
-        <option value="amber">AMBER — 호박색 모니터</option>
-        <option value="phosphor">PHOSPHOR — 초록 터미널</option>
-        <option value="mono">MONO — 흑백 + 주황 포인트</option>
-        <option value="neon">NEON — 마젠타·시안</option>
+        <option value="signal">SIGNAL — 빨강·초록·주황·노랑</option>
+        <option value="tide">TIDE — 하늘·민트·산호·모래</option>
+        <option value="sunset">SUNSET — 분홍·하늘·주황·노랑</option>
+        <option value="meadow">MEADOW — 라임·시안·주황·노랑</option>
+        <option value="neon">NEON — 마젠타·시안·노랑·보라</option>
       </select>
     </label>
     <fieldset class="night-set" id="anaSet">
@@ -576,7 +577,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
   const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', secMode: 'sweep', alarm: '', ...NIGHT_DEFAULTS };
-  const SCHEMES = ['signal', 'amber', 'phosphor', 'mono', 'neon'];
+  const SCHEMES = ['signal', 'tide', 'sunset', 'meadow', 'neon'];
   function applyScheme() {
     document.documentElement.dataset.scheme = SCHEMES.includes(cfg.scheme) ? cfg.scheme : 'signal';
   }
