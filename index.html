@@ -13,18 +13,15 @@
 <style>
 /* Layout: CRT-style bezel that fills the screen. Landscape (MacBook, iPad/phone sideways): left rail + right stack.
    Portrait (phone, iPad upright): one column. All sizes scale from --u, a unit tied to the frame's own width and height. */
+/* Color schemes. Roles: red = primary (time, hands), amber = secondary (seconds, numerals),
+   green = info (date), yellow = labels, line = borders, dim = muted text. */
 :root {
   color-scheme: dark;
-  --bg: #0a0907;
-  --panel: #100e0b;
-  --red: #ff4b2b;
-  --green: #74e37e;
-  --amber: #ffb23e;
-  --yellow: #f2d23c;
-  --line: #c9923f;
-  --dim: #7a6a52;
-  --card: #0d0b09;
-  --ink: #1a0d08;         /* text on filled red/amber buttons */
+  --t-bg: #0a0907; --t-panel: #100e0b; --t-card: #0d0b09; --t-red: #ff4b2b; --t-green: #74e37e; --t-amber: #ffb23e; --t-yellow: #f2d23c; --t-line: #c9923f; --t-dim: #7a6a52; --t-ink: #1a0d08;
+  --bg: var(--t-bg); --panel: var(--t-panel); --card: var(--t-card);
+  --red: var(--t-red); --green: var(--t-green); --amber: var(--t-amber); --yellow: var(--t-yellow);
+  --line: var(--t-line); --dim: var(--t-dim); --ink: var(--t-ink);
+  --glow: rgba(255,75,43,.35);
   --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
@@ -32,18 +29,24 @@
   --f-round: ui-rounded, "SF Pro Rounded", "Fredoka", "Arial Rounded MT Bold", sans-serif;
   --f-mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+:root[data-scheme="amber"] { --t-bg: #0a0700; --t-panel: #110c02; --t-card: #0e0a02; --t-red: #ffb000; --t-green: #ffcc66; --t-amber: #ff8c1a; --t-yellow: #ffd27a; --t-line: #8a5a12; --t-dim: #7a5a26; --t-ink: #1a1000; }
+:root[data-scheme="phosphor"] { --t-bg: #020a05; --t-panel: #04110a; --t-card: #031008; --t-red: #3dff7f; --t-green: #9dffb8; --t-amber: #1fcf5f; --t-yellow: #c8ffd4; --t-line: #1f7a45; --t-dim: #3c6a4c; --t-ink: #001a08; }
+:root[data-scheme="mono"] { --t-bg: #000000; --t-panel: #0a0a0b; --t-card: #111113; --t-red: #f5f5f7; --t-green: #a1a1a6; --t-amber: #ff9f0a; --t-yellow: #d1d1d6; --t-line: #3a3a3c; --t-dim: #6e6e73; --t-ink: #000000; }
+:root[data-scheme="neon"] { --t-bg: #07040d; --t-panel: #0d0817; --t-card: #0b0614; --t-red: #ff3fa4; --t-green: #3fe0ff; --t-amber: #ffd23f; --t-yellow: #b18cff; --t-line: #5b3a8c; --t-dim: #6a5a8a; --t-ink: #14001a; }
 /* Night mode: every color token slides toward one red, so nothing on screen emits white, green or blue light. */
 @supports (color: color-mix(in srgb, red, blue)) {
   :root {
-    --bg: color-mix(in srgb, #0a0907, #000 var(--nr));
-    --panel: color-mix(in srgb, #100e0b, #000 var(--nr));
-    --card: color-mix(in srgb, #0d0b09, #050000 var(--nr));
-    --red: color-mix(in srgb, #ff4b2b, #ff2a10 var(--nr));
-    --green: color-mix(in srgb, #74e37e, #c8301a var(--nr));
-    --amber: color-mix(in srgb, #ffb23e, #e3341a var(--nr));
-    --yellow: color-mix(in srgb, #f2d23c, #b02a16 var(--nr));
-    --line: color-mix(in srgb, #c9923f, #5c1a10 var(--nr));
-    --dim: color-mix(in srgb, #7a6a52, #5a2014 var(--nr));
+    --bg: color-mix(in srgb, var(--t-bg), #000 var(--nr));
+    --panel: color-mix(in srgb, var(--t-panel), #000 var(--nr));
+    --card: color-mix(in srgb, var(--t-card), #050000 var(--nr));
+    --red: color-mix(in srgb, var(--t-red), #ff2a10 var(--nr));
+    --green: color-mix(in srgb, var(--t-green), #c8301a var(--nr));
+    --amber: color-mix(in srgb, var(--t-amber), #e3341a var(--nr));
+    --yellow: color-mix(in srgb, var(--t-yellow), #b02a16 var(--nr));
+    --line: color-mix(in srgb, var(--t-line), #5c1a10 var(--nr));
+    --dim: color-mix(in srgb, var(--t-dim), #5a2014 var(--nr));
+    --ink: color-mix(in srgb, var(--t-ink), #1a0500 var(--nr));
+    --glow: color-mix(in srgb, var(--red) 38%, transparent);
   }
 }
 :root.night .frame { opacity: var(--nb); transition: opacity .6s ease; }
@@ -118,7 +121,7 @@ body {
 .date { font: 600 calc(5 * var(--u))/1 var(--f-digit); color: var(--green); letter-spacing: .14em; }
 .date .wd { font-family: var(--f-ko); font-size: .78em; letter-spacing: 0; }
 .time { display: flex; align-items: flex-end; gap: calc(1.2 * var(--u)); font-family: var(--f-digit); font-variant-numeric: tabular-nums; }
-.hm { font-size: calc(19 * var(--u)); line-height: .78; font-weight: 700; color: var(--red); text-shadow: 0 0 calc(2 * var(--u)) rgba(255,75,43,.35); }
+.hm { font-size: calc(19 * var(--u)); line-height: .78; font-weight: 700; color: var(--red); text-shadow: 0 0 calc(2 * var(--u)) var(--glow); }
 .hm .colon { animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: .25; } }
 .ss { font-size: calc(5.4 * var(--u)); line-height: 1; font-weight: 700; color: var(--amber); padding-bottom: calc(.6 * var(--u)); }
@@ -242,8 +245,8 @@ body {
    (period / D-day / outside), rotating every 10 s; tap or swipe to change. */
 .dots { display: none; }
 @media (orientation: landscape) and (max-height: 540px) {
-  body { background: #000; padding-block: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-bottom, 0px)); }
-  .frame { grid-template-columns: minmax(0, 1fr); background: #000; box-shadow: none; padding: 0; border-radius: 0; gap: 0; overflow: clip; }
+  body { background: var(--bg); padding-block: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-bottom, 0px)); }
+  .frame { grid-template-columns: minmax(0, 1fr); background: var(--bg); box-shadow: none; padding: 0; border-radius: 0; gap: 0; overflow: clip; }
   .frame::after { border-radius: 0; opacity: .6; }
   .frame > * { --u: 1cqh; }
   /* rail collapses to a small SYNC chip in the top-left corner */
@@ -260,7 +263,7 @@ body {
   .clock .analog { top: 11cqh; }   /* clear the SYNC / NIGHT chips */
   .date { font-size: min(10cqh, 4.6cqw); }
   .time { flex-direction: column; align-items: center; gap: 0; }
-  .hm { font-size: min(62cqh, 20cqw); line-height: .8; text-shadow: 0 0 4cqh rgba(255,75,43,.45); }
+  .hm { font-size: min(62cqh, 20cqw); line-height: .8; text-shadow: 0 0 4cqh var(--glow); }
   .ss { font-size: min(11cqh, 5cqw); padding: 0; letter-spacing: .1em; }
 
   .w {
@@ -321,7 +324,7 @@ body {
   :root.clockonly .clock { grid-area: 1 / 1; border: 0; align-content: center; gap: 3cqh; }
   :root.clockonly .date { font-size: min(9cqh, 4cqw); }
   :root.clockonly .time { flex-direction: row; align-items: flex-end; gap: 1.5cqw; }
-  :root.clockonly .hm { font-size: min(72cqh, 34cqw); line-height: .8; text-shadow: 0 0 4cqh rgba(255,75,43,.4); }
+  :root.clockonly .hm { font-size: min(72cqh, 34cqw); line-height: .8; text-shadow: 0 0 4cqh var(--glow); }
   :root.clockonly .ss { font-size: min(15cqh, 7cqw); padding: 0 0 1cqh; letter-spacing: .06em; }
   :root.clockonly.night .hm { text-shadow: none; }
   :root.clockonly .clock .analog { top: clamp(36px, 8cqh, 60px); }
@@ -449,6 +452,15 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
       </select>
     </label>
     <p class="hint">가로 화면(휴대폰·패드·컴퓨터)에서만 적용됩니다. CLOCK 버튼이나 시계를 좌우로 밀어서도 바꿀 수 있습니다.</p>
+    <label for="scheme">색 테마 COLOR
+      <select id="scheme">
+        <option value="signal">SIGNAL — 빨강·초록·주황 레트로</option>
+        <option value="amber">AMBER — 호박색 모니터</option>
+        <option value="phosphor">PHOSPHOR — 초록 터미널</option>
+        <option value="mono">MONO — 흑백 + 주황 포인트</option>
+        <option value="neon">NEON — 마젠타·시안</option>
+      </select>
+    </label>
     <label for="face">시계 스타일 CLOCK STYLE
       <select id="face">
         <option value="retro">RETRO — 큰 디지털</option>
@@ -550,7 +562,11 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', ...NIGHT_DEFAULTS };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', ...NIGHT_DEFAULTS };
+  const SCHEMES = ['signal', 'amber', 'phosphor', 'mono', 'neon'];
+  function applyScheme() {
+    document.documentElement.dataset.scheme = SCHEMES.includes(cfg.scheme) ? cfg.scheme : 'signal';
+  }
 
   const $ = (id) => document.getElementById(id);
   let cfg = load();
@@ -880,11 +896,12 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   }
   $('nBright').addEventListener('input', nightPreview);
   $('nRed').addEventListener('input', nightPreview);
-  dlg.addEventListener('close', () => { root.classList.remove('preview'); setNight(nightOn); tick(); });
+  $('scheme').addEventListener('change', () => { root.dataset.scheme = $('scheme').value; });
+  dlg.addEventListener('close', () => { applyScheme(); root.classList.remove('preview'); setNight(nightOn); tick(); });
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
-    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view;
+    $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view; $('scheme').value = cfg.scheme;
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -900,7 +917,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     const moved = lat !== cfg.lat || lon !== cfg.lon;
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
-      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value };
+      nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value, scheme: $('scheme').value };
+    applyScheme();
     setFace(cfg.face, false); applyView();
     lastAuto = null; nightOverride = null;
     allEntries = e; ddays = d; store();
@@ -998,6 +1016,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
   wake();
 
+  applyScheme();
   setFace(cfg.face, false);
   applyView();
   tick();
