@@ -22,9 +22,8 @@
   --red: var(--t-red); --green: var(--t-green); --amber: var(--t-amber); --yellow: var(--t-yellow);
   --line: var(--t-line); --dim: var(--t-dim); --ink: var(--t-ink);
   --glow: rgba(255,75,43,.35);
-  --accent: #F59A4A;      /* ANALOG accent: second hand, center ring, alarm icon, weekday */
-  --a-fg: #ffffff;
-  --a-acc: var(--accent);
+  --a-fg: var(--red);     /* ANALOG: numerals, hands, ticks = theme primary */
+  --a-acc: var(--amber);  /* ANALOG: second hand, centre ring, alarm icon, weekday = theme accent */
   --nr: 0%;               /* night redness: 0% normal colors .. 100% red only */
   --nb: 1;                /* night brightness: content opacity */
   --f-digit: "Teko", "Black Han Sans", "Oswald", "Arial Narrow", sans-serif;
@@ -50,8 +49,6 @@
     --dim: color-mix(in srgb, var(--t-dim), #5a2014 var(--nr));
     --ink: color-mix(in srgb, var(--t-ink), #1a0500 var(--nr));
     --glow: color-mix(in srgb, var(--red) 38%, transparent);
-    --a-fg: color-mix(in srgb, #ffffff, #ff3b30 var(--nr));
-    --a-acc: color-mix(in srgb, var(--accent), #ff3b30 var(--nr));
   }
 }
 :root.night .frame { opacity: var(--nb); transition: opacity .6s ease; }
@@ -145,7 +142,7 @@ body {
 }
 .facename.show { opacity: 1; transition-duration: .1s; }
 
-.analog { padding: 0; background: #000; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
+.analog { padding: 0; background: var(--bg); grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: stretch; align-content: stretch; }
 .analog svg { width: 100%; height: 100%; overflow: hidden; }
 .analog .tk { stroke: var(--a-fg); stroke-linecap: round; }
 .analog .num { fill: var(--a-fg); font-family: "Archivo", -apple-system, system-ui, sans-serif; font-stretch: 125%; font-weight: 650; text-anchor: middle; }
@@ -154,7 +151,7 @@ body {
 .analog .accs { stroke: var(--a-acc); fill: none; stroke-linecap: round; }
 .analog .hand { stroke: var(--a-fg); stroke-linecap: round; }
 .analog .sec { stroke: var(--a-acc); stroke-linecap: round; }
-.analog .ring { fill: #000; stroke: var(--a-acc); }
+.analog .ring { fill: var(--bg); stroke: var(--a-acc); }
 .analog .dbg { stroke: #3bc8d4; stroke-width: 1; fill: none; opacity: .6; }
 
 .led { gap: 4cqh; }
@@ -333,7 +330,6 @@ body {
   :root.clockonly .ss { font-size: min(15cqh, 7cqw); padding: 0 0 1cqh; letter-spacing: .06em; }
   :root.clockonly.night .hm { text-shadow: none; }
   :root.clockonly .clock .analog { top: clamp(36px, 8cqh, 60px); }
-  :root.clockonly:has(.clock[data-face="analog"]) { --bg: #000; }   /* ANALOG is pure black edge to edge */
   :root.clockonly:has(.clock[data-face="analog"]) .frame::after { display: none; }   /* flat, no scanlines */
 }
 
@@ -344,11 +340,6 @@ dialog {
 }
 dialog::backdrop { background: rgba(0,0,0,.75); }
 .night-set { border: 1px solid var(--line); padding: 12px 14px 2px; margin: 0 0 14px; }
-.swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 12px; }
-.swatches button { width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; box-shadow: 0 0 0 2px var(--panel); }
-.swatches button[aria-checked="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px #fff; }
-.swatches button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 4px; }
-dialog input[type="color"] { width: 44px; height: 32px; padding: 0; border: 1px solid var(--dim); background: #000; }
 .night-set legend { font: 18px/1 var(--f-ko); color: var(--yellow); padding: 0 6px; }
 dialog label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 dialog input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--red); }
@@ -475,15 +466,13 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     </label>
     <fieldset class="night-set" id="anaSet">
       <legend>아날로그 ANALOG</legend>
-      <div class="swatches" id="swatches" role="radiogroup" aria-label="강조색"></div>
-      <label class="check" for="accCustom">직접 고르기 <input type="color" id="accCustom"></label>
       <div class="pair">
         <label for="secMode">초침 SECOND HAND
           <select id="secMode"><option value="sweep">부드럽게</option><option value="tick">1초씩</option></select>
         </label>
         <label for="alarm">다음 알람 ALARM<input type="time" id="alarm"></label>
       </div>
-      <p class="hint">강조색은 초침, 가운데 링, 알람 아이콘, 요일 글자에 쓰입니다. 알람을 비우면 왼쪽 칸이 숨겨집니다. 웹페이지는 아이폰 알람을 읽을 수 없어 여기에 직접 넣어야 합니다.</p>
+      <p class="hint">색은 위의 색 테마를 따릅니다. 알람을 비우면 왼쪽 칸이 숨겨집니다. 웹페이지는 아이폰 알람을 읽을 수 없어 여기에 직접 넣어야 합니다.</p>
     </fieldset>
     <label for="face">시계 스타일 CLOCK STYLE
       <select id="face">
@@ -586,7 +575,7 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   // Night mode defaults: on from midnight (after 2자율학습 ends 23:50) until wake-up at 06:00.
   const NIGHT_DEFAULTS = { nAuto: true, nFrom: '00:00', nTo: '06:00', nBright: 40, nRed: 100 };
   const FACES = ['retro', 'analog', 'led', 'stack'];
-  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', accent: '#F59A4A', secMode: 'sweep', alarm: '', ...NIGHT_DEFAULTS };
+  const DEFAULTS = { sched: DEFAULT_SCHED, dd: DEFAULT_DD, lat: 37.5665, lon: 126.978, face: 'retro', view: 'panel', scheme: 'signal', secMode: 'sweep', alarm: '', ...NIGHT_DEFAULTS };
   const SCHEMES = ['signal', 'amber', 'phosphor', 'mono', 'neon'];
   function applyScheme() {
     document.documentElement.dataset.scheme = SCHEMES.includes(cfg.scheme) ? cfg.scheme : 'signal';
@@ -782,8 +771,6 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     slotCap: 0.045, slotLeftX: -0.30, slotRightX: 0.36, slotRingGap: 0.08, slotNumGap: 0.04,
     tickEase: 120,                             // ms, tick mode
   };
-  const ACCENTS = [['Rose', '#F06A8A'], ['Magenta', '#D45FB8'], ['Yellow', '#F5D33F'], ['Salmon', '#F2786E'],
-    ['Orange', '#F59A4A'], ['Green', '#5FD07A'], ['Cyan', '#3BC8D4'], ['Blue', '#4A90E2']];
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const SVGNS = 'http://www.w3.org/2000/svg';
   let ana = null;
@@ -937,10 +924,6 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   new ResizeObserver(() => { if ($('clock').dataset.face === 'analog') { ana = null; buildAnalog(); startAnalog(); } }).observe($('anaSvg'));
   if (document.fonts) document.fonts.ready.then(() => { ana = null; if ($('clock').dataset.face === 'analog') buildAnalog(); });
 
-  function applyAccent() {
-    document.documentElement.style.setProperty('--accent', /^#[0-9a-f]{6}$/i.test(cfg.accent) ? cfg.accent : '#F59A4A');
-  }
-
   // STACK digits: each digit is its own span, and only the digit that changed pops in.
   function setDigits(el, str) {
     [...el.children].forEach((d, i) => {
@@ -1048,24 +1031,13 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   $('nBright').addEventListener('input', nightPreview);
   $('nRed').addEventListener('input', nightPreview);
   $('scheme').addEventListener('change', () => { root.dataset.scheme = $('scheme').value; });
-  // accent swatches (live preview; Cancel restores)
-  let pendingAccent = cfg.accent;
-  $('swatches').innerHTML = ACCENTS.map(([n, c]) =>
-    `<button type="button" role="radio" aria-checked="false" aria-label="${n}" title="${n}" data-c="${c}" style="background:${c}"></button>`).join('');
-  function pickAccent(c) {
-    pendingAccent = c;
-    for (const b of $('swatches').children) b.setAttribute('aria-checked', String(b.dataset.c.toLowerCase() === c.toLowerCase()));
-    $('accCustom').value = c;
-    root.style.setProperty('--accent', c);
-  }
-  $('swatches').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) pickAccent(b.dataset.c); });
-  $('accCustom').addEventListener('input', () => pickAccent($('accCustom').value));
-  dlg.addEventListener('close', () => { applyScheme(); applyAccent(); root.classList.remove('preview'); setNight(nightOn); tick(); });
+
+  dlg.addEventListener('close', () => { applyScheme(); root.classList.remove('preview'); setNight(nightOn); tick(); });
   $('sync').addEventListener('click', () => {
     $('sched').value = cfg.sched; $('dd').value = cfg.dd; $('lat').value = cfg.lat; $('lon').value = cfg.lon; $('err').textContent = '';
     $('nAuto').checked = !!cfg.nAuto; $('nFrom').value = cfg.nFrom; $('nTo').value = cfg.nTo;
     $('nBright').value = cfg.nBright; $('nRed').value = cfg.nRed; $('face').value = cfg.face; $('view').value = cfg.view; $('scheme').value = cfg.scheme;
-    $('secMode').value = cfg.secMode; $('alarm').value = cfg.alarm; pickAccent(cfg.accent);
+    $('secMode').value = cfg.secMode; $('alarm').value = cfg.alarm;
     $('nBrightOut').textContent = cfg.nBright + '%'; $('nRedOut').textContent = cfg.nRed + '%';
     dlg.showModal();
   });
@@ -1082,8 +1054,8 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
     if (!/^\d{2}:\d{2}$/.test($('nFrom').value) || !/^\d{2}:\d{2}$/.test($('nTo').value)) { $('err').textContent = '야간 모드 시작·끝 시각을 입력하세요.'; return; }
     cfg = { sched: $('sched').value, dd: $('dd').value, lat, lon,
       nAuto: $('nAuto').checked, nFrom: $('nFrom').value, nTo: $('nTo').value, nBright: +$('nBright').value, nRed: +$('nRed').value, face: $('face').value, view: $('view').value, scheme: $('scheme').value,
-      accent: pendingAccent, secMode: $('secMode').value, alarm: $('alarm').value };
-    applyAccent(); if (ana) ana.slotKey = '';
+      secMode: $('secMode').value, alarm: $('alarm').value };
+    if (ana) ana.slotKey = '';
     applyScheme();
     setFace(cfg.face, false); applyView();
     lastAuto = null; nightOverride = null;
@@ -1183,7 +1155,6 @@ dialog textarea:focus, dialog input:focus { outline: 2px solid var(--yellow); ou
   wake();
 
   applyScheme();
-  applyAccent();
   setFace(cfg.face, false);
   applyView();
   tick();
